@@ -1,0 +1,606 @@
+{
+  "C:\\Users\\A\\Desktop\\17-international-business-and-global-strategy.pdf - Shortcut.lnk": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T13:18:07.003994"
+  },
+  "C:\\Users\\A\\Desktop\\Documents\\Asghar Tohidlou CV.docx": {
+    "original_path": "C:\\Users\\A\\Desktop\\Asghar Tohidlou CV.docx",
+    "category": "documents",
+    "moved_at": "2025-07-17T12:57:33.003834",
+    "action": "moved"
+  },
+  "E:\\A. Tohidlou\\Asghar Tohidlou CV.docx": {
+    "original_path": "C:\\Users\\A\\Desktop\\Asghar Tohidlou CV.docx",
+    "category": "documents",
+    "moved_at": "2025-07-17T13:03:59.663549",
+    "action": "moved"
+  },
+  "E:\\A. Tohidlou\\Asghar Tohidlou CV.pdf": {
+    "original_path": "C:\\Users\\A\\Desktop\\Asghar Tohidlou CV.pdf",
+    "category": "documents",
+    "moved_at": "2025-07-17T13:04:10.391117",
+    "action": "moved"
+  },
+  "C:\\Users\\A\\Desktop\\disable_eth.bat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T13:04:19.757772"
+  },
+  "C:\\Users\\A\\Desktop\\enable_eth.bat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T13:04:22.697379"
+  },
+  "E:\\pharma2\\products\\\u063a\u0630\u0627\u06cc\u06cc\\Jacobs\\Export Inquiry Form \u2013 LEO PHARMA.xlsx": {
+    "original_path": "C:\\Users\\A\\Desktop\\Export Inquiry Form \u2013 LEO PHARMA.xlsx",
+    "category": "misc",
+    "moved_at": "2025-07-17T13:05:40.739232",
+    "action": "moved"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\Dump_2025_06_28_15_58_19.dmp": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\updater.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\qtbase_zh_CN.qm": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\Qt6Widgets.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\Qt6Svg.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\Qt6Network.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\Qt6Gui.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\Qt6Core.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\nekobox_core.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\nekobox.png": {
+    "category": "images",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\nekobox.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\libssl-3-x64.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\libcrypto-3-x64.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\geosite.db": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\geosite.dat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\geoip.db": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\geoip.dat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\dxil.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\dxcompiler.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\tls\\qschannelbackend.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\tls\\qopensslbackend.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\tls\\qcertonlybackend.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\styles\\qwindowsvistastyle.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\styles\\qmodernwindowsstyle.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\platforms\\qwindows.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\networkinformation\\qnetworklistmanager.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qwebp.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qwbmp.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qtiff.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qtga.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qsvg.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qpdf.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qjpeg.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qico.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qicns.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\imageformats\\qgif.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\iconengines\\qsvgicon.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\generic\\qtuiotouchplugin.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\routes_box\\Default": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\routes\\Default": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1686.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1684.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1682.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1680.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1678.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1677.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1670.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1668.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1666.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1664.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\profiles\\1562.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\pm.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\nekoray.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\nekobox.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\coreType": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\2.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\1.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\groups\\0.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\dashboard\\index.html": {
+    "category": "code",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\sing-box-vpn.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\nekoray\\config\\neko.log": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:26.853960"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\zh-Hans\\v2rayN.resources.dll": {
+    "category": "code",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiTemps\\sysproxy.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiLogs\\2025-07-01.txt": {
+    "category": "documents",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiLogs\\2025-06-29.txt": {
+    "category": "documents",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiLogs\\2024-02-07.txt": {
+    "category": "documents",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiLogs\\2024-02-05.txt": {
+    "category": "documents",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiBackups\\guiNConfig_2025_07_01_10_13_58_767.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiBackups\\guiNConfig_2025_06_29_11_15_09_641.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiBackups\\guiNConfig_2025_06_29_11_13_55_891.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiBackups\\guiNConfig_2024_02_07_13_08_14_883.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiBackups\\guiNConfig_2024_02_05_11_00_23_818.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiBackups\\guiNConfig_2024_02_05_10_57_25_912.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\doc\\readme.md": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\zxing.presentation.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\zxing.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\xray.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\wxray.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\wv2ray.exe.sig": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\wv2ray.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\vpoint_vmess_freedom.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\vpoint_socks_vmess.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\v2rayUpgrade.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\v2rayN.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\v2ray.exe.sig": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\v2ray.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\v2ctl.exe.sig": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\v2ctl.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\System.Runtime.CompilerServices.Unsafe.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\System.Numerics.Vectors.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\System.Memory.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\System.Buffers.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\SagerNet.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\README.md": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\NHotkey.WindowsForms.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\NHotkey.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\Newtonsoft.Json.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\netstandard.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\log4net.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\LICENSE": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\guiNConfig.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\grpc_csharp_ext.x86.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\grpc_csharp_ext.x64.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\Grpc.Core.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\Grpc.Core.Api.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\Google.Protobuf.dll": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\geosite.dat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\geoip.dat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\geoip-only-cn-private.dat": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\EnableLoopback.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\config.json": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\Clash.Meta-windows-amd64-compatible.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  },
+  "C:\\Users\\A\\Desktop\\v2rayN-Core\\clash-windows-amd64.exe": {
+    "category": "misc",
+    "action": "kept",
+    "timestamp": "2025-07-17T14:00:35.221826"
+  }
+}
