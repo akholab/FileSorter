@@ -38,7 +38,16 @@ lint() {
   [ -z "$out" ] || { printf '%s\n' "$out"; return 1; }
 }
 
+# The owner's personal data files must stay out of git (they are git-ignored,
+# but `git add -f` or an edited .gitignore could bring them back).
+private_untracked() {
+  local tracked
+  tracked=$(git ls-files -- file_index.json file_indexer_config.ini)
+  [ -z "$tracked" ] || { echo "Personal data files are tracked by git: $tracked. Run git rm --cached on them."; return 1; }
+}
+
 step "syntax" syntax
+step "private files untracked" private_untracked
 step "pyflakes" lint
 
 if [ "$fail" -eq 0 ]; then echo "check: all steps passed"; fi

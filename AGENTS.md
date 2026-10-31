@@ -31,6 +31,7 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 - `*.bat`, `FileManager.vbs`: Windows-only launchers and installers.
 - `file_index.json`, `file_indexer_config.ini`: created at runtime in the working directory. Git-ignored.
 - `README.md`: features, launch options, how to add categories.
+- The default branch is `master`, not `main`: branch from and open PRs against `master`.
 
 ## Boundaries
 

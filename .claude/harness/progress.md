@@ -12,7 +12,7 @@ An intelligent file sorter that runs on all of the owner's devices, not just Win
 
 ## Tasks
 
-- [ ] Run /retro once after the first working session, to turn real mistakes into checks and rules.
+- [x] Run /retro once after the first working session, to turn real mistakes into checks and rules.
 - [ ] Make Windows-only code optional: guard the `win32api`/`win32gui` imports and `os.startfile`, and make `pywin32` a Windows-only requirement, so the app starts on macOS and Linux.
 - [ ] Use per-OS defaults for watch folders, file paths and launchers (the `.bat`/`.vbs` files only work on Windows).
 - [ ] Split the categorizing logic away from the GUI and add a small pytest suite for it, then add `pytest` to `check.sh`.
@@ -20,5 +20,6 @@ An intelligent file sorter that runs on all of the owner's devices, not just Win
 ## Session log
 
 <!-- Newest first. One line per session: date, what changed, what's next or blocked. -->
+- 2026-10-31: retro: ask rules for py/venv python.exe and the .bat/.vbs launchers; check fails if personal data files are tracked; AGENTS notes default branch is master.
 - 2026-10-31: Harness installed (kit v2: guard hook, ask/deny permission rules, /retro skill).
 - 2026-10-31: Harness installed (kit v1). Fixed two bugs pyflakes found (missing `import platform`, lambda using `e` after its except block). Untracked the runtime data files.
