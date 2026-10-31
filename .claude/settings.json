@@ -74,7 +74,9 @@
       "Read(/file_indexer_config.ini)",
       "Edit(/file_indexer_config.ini)",
       "Read(/file_undo_log.json)",
-      "Edit(/file_undo_log.json)"
+      "Edit(/file_undo_log.json)",
+      "Read(/file_learned_choices.json)",
+      "Edit(/file_learned_choices.json)"
     ]
   }
 }

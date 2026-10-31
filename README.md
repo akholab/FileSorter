@@ -10,6 +10,8 @@ A Python-based file indexing and organization system for Windows that intelligen
 - **Flexible Organization**: Suggests multiple organization options for each file
 - **Persistent Indexing**: Maintains a database of file locations and organization decisions
 - **Customizable Categories**: Easy to modify file categories and organization rules
+- **Learns Your Habits**: After you move (or keep) the same kind of file the same way twice, that choice is suggested first. "Kind of file" means the same extension in the same watched folder. Undo takes the lesson back. Change the number with `learn_threshold` in the config file
+- **Safe Moves**: Never overwrites a file (a clash becomes `name (2).ext`), waits until a download has finished, keeps Undo across restarts, and sends deleted files to the Recycle Bin
 
 ## Installation
 
