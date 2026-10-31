@@ -17,7 +17,7 @@ import psutil
 from file_monitor import FileMonitor
 from categorizer import default_categories, categorize_file, suggest_organization
 from safemove import UndoLog, safe_move, trash_file, undo_move
-from filewatch import is_still_changing
+from filewatch import get_settle_seconds, is_partial_name, is_still_changing
 import win32api
 import win32gui
 import subprocess
@@ -164,8 +164,7 @@ class FileIndexer:
         A file that was modified in the last few seconds is probably still
         being downloaded or copied. (`settle_seconds` in the config, default 5.)
         """
-        quiet = self.config.getfloat('DEFAULT', 'settle_seconds', fallback=5.0)
-        if is_still_changing(file_path, quiet):
+        if is_still_changing(file_path, get_settle_seconds(self.config)):
             return f"{Path(file_path).name} is still being written. Try again in a few seconds."
         return None
     
@@ -233,6 +232,10 @@ class FileIndexer:
             exclude_folders = {folder.strip() for folder in exclude_folders if folder.strip()}
             include_extensions = {ext.strip() for ext in include_extensions if ext.strip()}
             include_folders = {folder.strip() for folder in include_folders if folder.strip()}
+            
+            # Skip unfinished downloads (.crdownload, .part, ...)
+            if is_partial_name(path):
+                return False
             
             # Check exclude extensions
             if path.suffix.lower() in exclude_extensions:
@@ -684,7 +687,7 @@ class FileIndexerGUI:
                     done = self.indexer.execute_suggestion(selected_suggestion, "keep")
                 if not done:
                     # Keep the file in the queue and the popup open
-                    messagebox.showwarning("Not moved", self.indexer.last_error or "Failed to organize file")
+                    messagebox.showwarning("Could not complete", self.indexer.last_error or "Failed to organize file")
                     return
                 
                 # Remove from queue
@@ -763,6 +766,8 @@ class FileIndexerGUI:
                     self.indexer.suggestions_queue.pop(index)
                     self.update_suggestions_list()
                     messagebox.showinfo("Success", "File kept in current location!")
+                else:
+                    messagebox.showwarning("Could not complete", self.indexer.last_error or "Failed to keep file")
                 break
     
     def preview_file(self):

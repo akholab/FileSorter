@@ -10,7 +10,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from pathlib import Path
 
-from filewatch import SettleTracker, is_partial_name
+from filewatch import SettleTracker, get_settle_seconds, is_partial_name
 
 class FileChangeHandler(FileSystemEventHandler):
     def __init__(self, indexer, tracker):
@@ -93,7 +93,7 @@ class FileMonitor:
         self.is_running = False
         # A file is queued only after it has stayed unchanged this long
         self.settle = SettleTracker(
-            quiet_seconds=indexer.config.getfloat('DEFAULT', 'settle_seconds', fallback=5.0))
+            quiet_seconds=get_settle_seconds(indexer.config))
         self._stop_event = threading.Event()
         self._settle_thread = None
     
@@ -140,7 +140,10 @@ class FileMonitor:
     
     def _settle_loop(self):
         while not self._stop_event.wait(1.0):
-            self.process_settled()
+            try:
+                self.process_settled()
+            except Exception as e:
+                print(f"Error while checking new files: {e}")
     
     def start(self):
         """Start monitoring"""

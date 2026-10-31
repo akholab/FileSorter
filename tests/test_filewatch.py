@@ -3,7 +3,9 @@ import time
 
 import pytest
 
-from filewatch import SettleTracker, is_partial_name, is_still_changing, snapshot
+import configparser
+
+from filewatch import SettleTracker, get_settle_seconds, is_partial_name, is_still_changing, snapshot
 
 
 @pytest.mark.parametrize("name", [
@@ -184,3 +186,52 @@ def test_works_with_real_files(tmp_path):
     assert t.poll() == []
     now[0] = 3.5
     assert t.poll() == [str(f)]
+
+
+def test_file_with_a_future_modified_time_can_still_be_moved(tmp_path):
+    f = tmp_path / "a.bin"
+    f.write_bytes(b"x")
+    set_age(f, -3600)  # an hour in the future
+    assert not is_still_changing(f, quiet_seconds=5)
+
+
+def test_tiny_clock_jitter_into_the_future_still_counts_as_changing(tmp_path):
+    f = tmp_path / "a.bin"
+    f.write_bytes(b"x")
+    set_age(f, -1)
+    assert is_still_changing(f, quiet_seconds=5)
+
+
+@pytest.mark.parametrize("value,expected", [("12", 12.0), ("0", 0.0), ("2.5", 2.5),
+                                            ("abc", 5.0), ("-3", 5.0), ("", 5.0)])
+def test_settle_seconds_from_config(value, expected):
+    cfg = configparser.ConfigParser()
+    cfg["DEFAULT"] = {"settle_seconds": value}
+    assert get_settle_seconds(cfg) == expected
+
+
+def test_settle_seconds_defaults_when_missing():
+    assert get_settle_seconds(configparser.ConfigParser()) == 5.0
+
+
+def test_a_watch_call_during_a_poll_is_not_lost(fake):
+    fake.snaps["a"] = (1, 1)
+    t = tracker(fake)
+    t.watch("a")
+    real_snap = fake.snap
+
+    def snap_then_rewatch(path):
+        result = real_snap(path)
+        t._snapshot = real_snap  # watch() below must not recurse into this hook
+        fake.now = 4
+        t.watch("a")  # restarted by another thread while we are stat-ing
+        fake.now = 6  # by the time poll() applies its result, the old entry looks settled
+        return result
+
+    t._snapshot = snap_then_rewatch
+    fake.now = 1
+    assert t.poll() == []  # the restart wins; the file is not released
+    fake.now = 8
+    assert t.poll() == []
+    fake.now = 9
+    assert t.poll() == ["a"]
