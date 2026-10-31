@@ -11,7 +11,7 @@ This folder keeps coding agents honest in this project. It came from [MyClaudeSe
 | `hooks/stop-check.sh` | Runs when Claude tries to finish: runs `check.sh` and sends Claude back if it fails, up to 3 times per session. Skips when nothing changed. |
 | `.state/` | Scratch files for the hooks. Git-ignored. |
 
-The hooks and the ask/deny permission rules are in `.claude/settings.json`. The map for agents is `AGENTS.md` at the project root. `/retro` (in `.claude/skills/retro/`) reviews a session and proposes harness fixes.
+The hooks and the ask/deny permission rules are in `.claude/settings.json`. The map for agents is `AGENTS.md` at the project root. `/retro` (in `.claude/skills/retro/`) reviews a session and proposes harness fixes. The `reviewer` subagent (`.claude/agents/reviewer.md`) reviews each change before Claude says it's done; it reads but never edits.
 
 **Turn the gate off for a while:** remove the `Stop` entry from `.claude/settings.json`.
 **Run a blocked command anyway:** run it yourself in your own terminal.

@@ -9,7 +9,8 @@ Smart File Indexer: a personal Python desktop app (Tkinter GUI plus a system-tra
 1. Read `.claude/harness/progress.md` for the goal, open tasks and the last session's notes.
 2. Work on one task at a time.
 3. Run `.claude/harness/check.sh`. Done means: `check` passes and the change is described in `progress.md`. A Stop hook runs `check` too and sends you back if it fails.
-4. Update `progress.md`: tick finished tasks and add one line to the session log.
+4. Before saying done on a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
+5. Update `progress.md`: tick finished tasks and add one line to the session log.
 
 ## Commands
 
