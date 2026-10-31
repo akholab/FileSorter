@@ -42,7 +42,7 @@ lint() {
 # but `git add -f` or an edited .gitignore could bring them back).
 private_untracked() {
   local tracked
-  tracked=$(git ls-files -- file_index.json file_indexer_config.ini)
+  tracked=$(git ls-files -- file_index.json file_indexer_config.ini file_undo_log.json)
   [ -z "$tracked" ] || { echo "Personal data files are tracked by git: $tracked. Run git rm --cached on them."; return 1; }
 }
 
@@ -56,8 +56,8 @@ reviewer_read_only() {
   fi
 }
 
-# Unit tests for the sorting logic (categorizer.py has no Windows imports, so
-# they run on any OS).
+# Unit tests for the pure modules (categorizer.py, safemove.py: no Windows
+# imports, so they run on any OS).
 tests() {
   if ! python3 -m pytest --version >/dev/null 2>&1; then
     python3 -m pip install -q -r requirements-dev.txt >/dev/null 2>&1 ||
