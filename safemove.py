@@ -8,6 +8,7 @@ import json
 import os
 import shutil
 import tempfile
+import threading
 from datetime import datetime
 from pathlib import Path
 
@@ -38,6 +39,11 @@ def safe_move(source, destination):
     destination = Path(destination)
     if not source.exists():
         raise FileNotFoundError(f"File not found: {source}")
+    try:
+        if destination.exists() and os.path.samefile(source, destination):
+            return source  # already there: nothing to move
+    except OSError:
+        pass
     destination.parent.mkdir(parents=True, exist_ok=True)
     final = unique_destination(destination)
     shutil.move(str(source), str(final))
@@ -67,6 +73,7 @@ class UndoLog:
     def __init__(self, path, max_entries=DEFAULT_MAX_ENTRIES):
         self.path = Path(path)
         self.max_entries = max_entries
+        self._lock = threading.RLock()
         self.entries = self._load()
 
     def _load(self):
@@ -107,18 +114,25 @@ class UndoLog:
             "timestamp": datetime.now().isoformat(),
             "details": details or {},
         }
-        self.entries.append(entry)
-        del self.entries[:-self.max_entries]
-        self._save()
+        with self._lock:
+            self.entries.append(entry)
+            del self.entries[:-self.max_entries]
+            self._save()
         return entry
+
+    def peek_last(self):
+        """Return the newest entry without removing it, or None if empty."""
+        with self._lock:
+            return self.entries[-1] if self.entries else None
 
     def pop_last(self):
         """Remove and return the newest entry, or None if the log is empty."""
-        if not self.entries:
-            return None
-        entry = self.entries.pop()
-        self._save()
-        return entry
+        with self._lock:
+            if not self.entries:
+                return None
+            entry = self.entries.pop()
+            self._save()
+            return entry
 
 
 def undo_move(entry):
@@ -128,7 +142,10 @@ def undo_move(entry):
     sits at the original path, the file comes back under a numbered name.
     """
     current = Path(entry["file_path"])
-    original = Path(entry["details"]["original_path"])
+    try:
+        original = Path(entry["details"]["original_path"])
+    except (KeyError, TypeError):
+        return False, f"Undo log entry for {current.name} is damaged (no original path)", None
     if not current.exists():
         return False, f"File not found: {current}", None
     restored = safe_move(current, original)

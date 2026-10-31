@@ -114,40 +114,47 @@ class FileIndexer:
     
     def undo_last_action(self):
         """Undo the last action performed"""
-        last_action = self.undo_log.pop_last()
+        last_action = self.undo_log.peek_last()
         if last_action is None:
             return False, "No actions to undo"
         
         try:
-            if last_action["type"] == "moved":
-                # Undo move: put the file back without overwriting anything
-                current_path = Path(last_action["file_path"])
-                success, message, _ = undo_move(last_action)
-                if success:
-                    # Remove from index
-                    if str(current_path) in self.index_data:
-                        del self.index_data[str(current_path)]
-                        self.save_index()
-                return success, message
-            
-            elif last_action["type"] == "deleted":
-                # Deleted files go to the Recycle Bin; restoring is manual
-                file_path = Path(last_action["file_path"])
-                return False, f"Cannot undo delete here: {file_path.name} is in the Recycle Bin. Restore it from there."
-            
-            elif last_action["type"] == "kept":
-                # Undo keep: just remove from index
-                file_path = Path(last_action["file_path"])
-                if str(file_path) in self.index_data:
-                    del self.index_data[str(file_path)]
-                    self.save_index()
-                return True, f"Undid keep action for: {file_path.name}"
-            
-            else:
-                return False, f"Unknown action type: {last_action['type']}"
-                
+            success, message = self._undo_entry(last_action)
         except Exception as e:
+            # Keep the entry in the log so the user can try again
             return False, f"Error undoing action: {e}"
+        
+        self.undo_log.pop_last()
+        return success, message
+    
+    def _undo_entry(self, last_action):
+        """Undo one logged action and return (success, message)"""
+        if last_action["type"] == "moved":
+            # Undo move: put the file back without overwriting anything
+            current_path = Path(last_action["file_path"])
+            success, message, _ = undo_move(last_action)
+            if success:
+                # Remove from index
+                if str(current_path) in self.index_data:
+                    del self.index_data[str(current_path)]
+                    self.save_index()
+            return success, message
+        
+        elif last_action["type"] == "deleted":
+            # Deleted files go to the Recycle Bin; restoring is manual
+            file_path = Path(last_action["file_path"])
+            return False, f"Cannot undo delete here: {file_path.name} is in the Recycle Bin. Restore it from there."
+        
+        elif last_action["type"] == "kept":
+            # Undo keep: just remove from index
+            file_path = Path(last_action["file_path"])
+            if str(file_path) in self.index_data:
+                del self.index_data[str(file_path)]
+                self.save_index()
+            return True, f"Undid keep action for: {file_path.name}"
+        
+        else:
+            return False, f"Unknown action type: {last_action['type']}"
     
     def execute_suggestion(self, suggestion, action):
         """Execute a user-approved suggestion"""

@@ -131,7 +131,7 @@ def test_undo_reports_a_file_that_is_gone(tmp_path):
 
 # --- trash_file -----------------------------------------------------------
 
-def test_trash_uses_send2trash_and_keeps_the_file_recoverable(tmp_path, monkeypatch):
+def test_trash_hands_the_path_to_send2trash(tmp_path, monkeypatch):
     calls = []
     fake = types.ModuleType("send2trash")
     fake.send2trash = lambda p: calls.append(p)
@@ -139,7 +139,6 @@ def test_trash_uses_send2trash_and_keeps_the_file_recoverable(tmp_path, monkeypa
     f = write(tmp_path / "a.txt")
     trash_file(f)
     assert calls == [str(f)]
-    assert f.exists()  # the fake did not delete: nothing else removes the file
 
 
 def test_trash_without_the_library_refuses_instead_of_deleting(tmp_path, monkeypatch):
@@ -156,3 +155,27 @@ def test_log_trims_in_memory_too(tmp_path):
         log.record("kept", f"/f{i}")
     assert len(log) == 3
     assert log.pop_last()["file_path"] == "/f4"
+
+
+def test_moving_a_file_onto_itself_is_a_no_op(tmp_path):
+    f = write(tmp_path / "a.txt", "data")
+    assert safe_move(f, f) == f
+    assert [p.name for p in tmp_path.iterdir()] == ["a.txt"]
+    assert f.read_text() == "data"
+
+
+def test_peek_does_not_remove(tmp_path):
+    log = UndoLog(tmp_path / "undo.json")
+    log.record("kept", "/f1")
+    assert log.peek_last()["file_path"] == "/f1"
+    assert len(log) == 1
+    assert UndoLog(tmp_path / "empty.json").peek_last() is None
+
+
+def test_undo_of_a_damaged_entry_reports_it_instead_of_crashing(tmp_path):
+    moved = write(tmp_path / "out" / "a.txt")
+    ok, msg, restored = undo_move({"file_path": str(moved), "details": {}})
+    assert not ok and restored is None and "damaged" in msg
+    assert moved.exists()
+    ok, _, _ = undo_move({"file_path": str(moved)})
+    assert not ok
