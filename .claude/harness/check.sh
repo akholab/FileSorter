@@ -46,9 +46,20 @@ private_untracked() {
   [ -z "$tracked" ] || { echo "Personal data files are tracked by git: $tracked. Run git rm --cached on them."; return 1; }
 }
 
+# The reviewer subagent must stay read-only: no editing tools in its tools line.
+reviewer_read_only() {
+  local f=.claude/agents/reviewer.md tools
+  tools=$(awk '/^---$/ { n++; next } n == 1 && sub(/^tools:[[:space:]]*/, "")' "$f")
+  [ -n "$tools" ] || { echo "$f: no tools line (it would inherit every tool)"; return 1; }
+  if printf '%s\n' "$tools" | grep -qwE 'Edit|Write|NotebookEdit|MultiEdit'; then
+    echo "$f: tools include an editing tool: $tools"; return 1
+  fi
+}
+
 step "syntax" syntax
 step "private files untracked" private_untracked
 step "pyflakes" lint
+step "reviewer agent is read-only" reviewer_read_only
 
 if [ "$fail" -eq 0 ]; then echo "check: all steps passed"; fi
 exit "$fail"

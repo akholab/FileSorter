@@ -8,9 +8,11 @@ Smart File Indexer: a personal Python desktop app (Tkinter GUI plus a system-tra
 
 1. Read `.claude/harness/progress.md` for the goal, open tasks and the last session's notes.
 2. Work on one task at a time.
-3. Run `.claude/harness/check.sh`. Done means: `check` passes and the change is described in `progress.md`. A Stop hook runs `check` too and sends you back if it fails.
-4. Before saying done on a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
-5. Update `progress.md`: tick finished tasks and add one line to the session log.
+3. Update `progress.md`: tick finished tasks and add one line to the session log.
+4. Run `.claude/harness/check.sh`. A Stop hook runs it too and sends you back if it fails.
+5. On a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
+
+Done means: `check` passes, the reviewer's findings are fixed or answered, and the change is described in `progress.md`.
 
 ## Commands
 
@@ -32,6 +34,7 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 - `*.bat`, `FileManager.vbs`: Windows-only launchers and installers.
 - `file_index.json`, `file_indexer_config.ini`: created at runtime in the working directory. Git-ignored.
 - `README.md`: features, launch options, how to add categories.
+- `.claude/harness/`: check, progress file and hooks (see its `README.md`). `.claude/agents/reviewer.md`: the read-only reviewer for step 5. `.claude/skills/retro/`: `/retro`.
 - The default branch is `master`, not `main`: branch from and open PRs against `master`.
 
 ## Boundaries
