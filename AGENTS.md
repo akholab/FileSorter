@@ -16,6 +16,15 @@ If `reviewer` or `/retro` isn't available by name (for example in a cloud sessio
 
 Done means: `check` passes, the reviewer's findings are fixed or answered, and the change is described in `progress.md`.
 
+## Writing code
+
+<!-- Adapted from DietrichGebert/ponytail (MIT, © 2026 DietrichGebert). -->
+- Make the smallest change that fully solves the task. Take the first that works: skip what nobody asked for (name it in one line), reuse code already in this repo, the standard library, an installed dependency, then new code. No new dependency for a few lines; no abstraction, option or config nobody asked for.
+- Finish every part the change breaks: callers, tests, fixtures, config. For a bug, grep every caller first and fix the root cause once in the shared code.
+- Never cut: validation of outside input, error handling that prevents data loss, security, accessibility, or anything the user asked for.
+- A shortcut with a known limit gets a comment: `shortcut: <the limit>, <when to upgrade>`.
+- When you report a finished task to the user, end with one line: what you skipped or didn't check, and any risk. Subagents with their own output format (like `reviewer`) skip this.
+
 ## Commands
 
 | Task | Command |
