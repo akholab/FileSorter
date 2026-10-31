@@ -228,3 +228,22 @@ def test_apply_does_not_modify_its_input(tmp_path, root):
     s = base_suggestions(f)
     L.apply(f, s, [root])
     assert s == base_suggestions(f)
+
+
+def test_a_file_already_in_its_usual_folder_gets_no_move_suggestion(tmp_path, root):
+    pdfs = root / "PDFs"
+    pdfs.mkdir()
+    L = trained(tmp_path, root, pdfs)
+    f = pdfs / "a.pdf"  # same group (the watched root is Downloads), already in the usual folder
+    assert L.apply(f, base_suggestions(f), [root]) == base_suggestions(f)
+
+
+def test_folders_that_differ_only_in_case_count_as_one_choice(tmp_path, root, monkeypatch):
+    import learning
+    monkeypatch.setattr(learning, "_norm", lambda p: str(p).lower())  # what Windows does
+    L = make_learner(tmp_path)
+    L.vote(root / "a.pdf", tmp_path / "Docs", [root])
+    L.vote(root / "b.pdf", tmp_path / "DOCS", [root])
+    path, count = L.usual(root / "c.pdf", [root])
+    assert count == 2
+    assert path == str(tmp_path / "DOCS")  # shown the way you last wrote it

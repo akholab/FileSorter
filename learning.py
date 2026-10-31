@@ -40,7 +40,7 @@ class Learner:
         self.path = Path(path)
         self.threshold = threshold
         self._lock = threading.RLock()
-        # {group key: {destination folder or KEEP: {"count": n, "last": iso time}}}
+        # {group key: {normalised destination or KEEP: {"count": n, "last": iso time, "path": folder}}}
         self.votes = self._load()
 
     # --- grouping -----------------------------------------------------------
@@ -79,7 +79,8 @@ class Learner:
                 continue
             for dest, info in dests.items():
                 if isinstance(info, dict) and isinstance(info.get("count"), int) and info["count"] > 0:
-                    clean.setdefault(key, {})[dest] = {"count": info["count"], "last": str(info.get("last", ""))}
+                    clean.setdefault(key, {})[dest] = {"count": info["count"], "last": str(info.get("last", "")),
+                                                       "path": str(info.get("path", dest))}
         return clean
 
     def _save(self):
@@ -105,15 +106,22 @@ class Learner:
         """Count one vote. `destination_folder` is a folder path, or KEEP.
         Returns (key, destination) so the vote can be retracted on undo."""
         key = self.key_for(file_path, roots)
-        dest = KEEP if destination_folder == KEEP else str(Path(destination_folder))
-        self.add(key, dest)
+        if destination_folder == KEEP:
+            dest, path = KEEP, KEEP
+        else:
+            # Folders that differ only in case or slashes (Windows) are one choice
+            path = str(Path(destination_folder))
+            dest = _norm(path)
+        self.add(key, dest, path)
         return key, dest
 
-    def add(self, key, dest):
+    def add(self, key, dest, path=None):
         with self._lock:
-            entry = self.votes.setdefault(key, {}).setdefault(dest, {"count": 0, "last": ""})
+            entry = self.votes.setdefault(key, {}).setdefault(dest, {"count": 0, "last": "", "path": dest})
             entry["count"] += 1
             entry["last"] = datetime.now().isoformat()
+            if path is not None:
+                entry["path"] = path
             self._save()
 
     def retract(self, key, dest):
@@ -143,7 +151,7 @@ class Learner:
             dest, info = max(dests.items(), key=lambda kv: (kv[1]["count"], kv[1]["last"]))
             if info["count"] < self.threshold:
                 return None
-            return dest, info["count"]
+            return (KEEP if dest == KEEP else info["path"]), info["count"]
 
     def apply(self, file_path, suggestions, roots=()):
         """Return `suggestions` with the learned choice moved (or added) at the
@@ -165,6 +173,8 @@ class Learner:
 
         if not Path(dest).is_dir():
             return suggestions  # the folder was deleted: don't bring it back
+        if _norm(file_path.parent) == _norm(dest):
+            return suggestions  # the file is already in its usual folder
 
         wanted = _norm(dest)
         for i, s in enumerate(suggestions):

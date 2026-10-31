@@ -142,3 +142,29 @@ def test_learned_choices_survive_a_restart(ix, tmp_path):
 def test_initial_scan_skips_partial_downloads(ix):
     assert not ix.should_process_file(str(ix.watched / "movie.mp4.crdownload"))
     assert ix.should_process_file(str(ix.watched / "movie.mp4"))
+
+
+def test_a_learning_failure_never_makes_a_finished_move_look_failed(ix, tmp_path, monkeypatch):
+    def boom(*a, **k):
+        raise RuntimeError("learner broke")
+    monkeypatch.setattr(ix.learner, "vote", boom)
+    f = make(ix.watched, "a.pdf")
+    s = {"action": "move", "source": str(f), "destination": str(tmp_path / "Docs" / "a.pdf")}
+    assert ix.execute_suggestion(s, "move") is True
+    assert (tmp_path / "Docs" / "a.pdf").exists()
+    ok, _ = ix.undo_last_action()  # the move still has an undo entry
+    assert ok and f.exists()
+
+
+def test_moving_a_file_onto_itself_teaches_nothing(ix):
+    f = make(ix.watched, "a.pdf")
+    s = {"action": "move", "source": str(f), "destination": str(f)}
+    assert ix.execute_suggestion(s, "move")
+    assert ix.learner.votes == {}
+
+
+def test_a_bulk_keep_counts_once_per_kind_of_file(ix):
+    seen = set()
+    for n in "abc":
+        ix.learn_from_move(make(ix.watched, f"{n}.zip"), None, seen)
+    assert sum(e["count"] for d in ix.learner.votes.values() for e in d.values()) == 1

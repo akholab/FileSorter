@@ -101,14 +101,21 @@ class FileIndexer:
         Returns the details to store with the undo entry so Undo can take the
         vote back. Pass a set as `seen` so a bulk move counts once per group.
         """
-        roots = self.file_monitor.get_monitored_directories()
-        key = Learner.key_for(source, roots)
-        if seen is not None:
-            if key in seen:
-                return {}
-            seen.add(key)
-        key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent, roots)
-        return {"learn_key": key, "learn_dest": dest}
+        try:
+            if destination is not None and os.path.normcase(str(Path(destination).parent)) == os.path.normcase(str(Path(source).parent)):
+                return {}  # the file did not go anywhere: nothing to learn
+            roots = self.file_monitor.get_monitored_directories()
+            key = Learner.key_for(source, roots)
+            if seen is not None:
+                if key in seen:
+                    return {}
+                seen.add(key)
+            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent, roots)
+            return {"learn_key": key, "learn_dest": dest}
+        except Exception as e:
+            # Learning is best effort: it must never make a finished move look failed
+            print(f"Could not learn from this action: {e}")
+            return {}
     
     def add_to_suggestions_queue(self, file_path):
         """Add a file to the suggestions queue for user review"""
@@ -975,6 +982,7 @@ class FileIndexerGUI:
         
         try:
             kept_count = 0
+            learned_groups = set()
             
             # Find all files in this directory and subdirectories
             files_to_keep = []
@@ -994,8 +1002,9 @@ class FileIndexerGUI:
                         "timestamp": datetime.now().isoformat()
                     }
                     
-                    # Record action for undo
-                    self.indexer.record_action("kept", file_path)
+                    # Record action for undo (a bulk keep is one vote per kind of file)
+                    self.indexer.record_action("kept", file_path,
+                                               self.indexer.learn_from_move(file_path, None, learned_groups))
                     
                     # Remove from queue
                     self.indexer.suggestions_queue.pop(i)
