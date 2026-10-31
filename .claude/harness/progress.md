@@ -20,6 +20,7 @@ An intelligent file sorter that runs on all of the owner's devices, not just Win
 ## Session log
 
 <!-- Newest first. One line per session: date, what changed, what's next or blocked. -->
+- 2026-10-31: retro: Known mistake about testing data-file checks on the real files; AGENTS.md says how to run reviewer and /retro when not available by name; kit items sent to the kit thread.
 - 2026-10-31: Harness updated to the latest kit: read-only `reviewer` subagent (`.claude/agents/reviewer.md`) and a review step before done. Review fixes: one definition of done, progress updated before review, check enforces a read-only reviewer.
 - 2026-10-31: retro: ask rules for py/venv python.exe and the .bat/.vbs launchers; check fails if personal data files are tracked; AGENTS notes default branch is master.
 - 2026-10-31: Harness installed (kit v2: guard hook, ask/deny permission rules, /retro skill).

@@ -12,6 +12,8 @@ Smart File Indexer: a personal Python desktop app (Tkinter GUI plus a system-tra
 4. Run `.claude/harness/check.sh`. A Stop hook runs it too and sends you back if it fails.
 5. On a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
 
+If `reviewer` or `/retro` isn't available by name (for example in a cloud session that didn't start in this repo), start a general agent and give it `.claude/agents/reviewer.md` or `.claude/skills/retro/SKILL.md` as its instructions.
+
 Done means: `check` passes, the reviewer's findings are fixed or answered, and the change is described in `progress.md`.
 
 ## Commands
@@ -46,4 +48,4 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 ## Known mistakes
 
 <!-- One line per real mistake, phrased as what to do instead. Prefer turning a mistake into a check (run /retro). -->
-- None recorded yet.
+- To test a check that looks at `file_index.json` or `file_indexer_config.ini`, use a scratch git repo with fake files, never the real ones. The deny rules only apply when the session starts in this repo; an agent once overwrote the real index this way.
