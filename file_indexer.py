@@ -16,6 +16,7 @@ from tkinter import ttk, messagebox, filedialog
 import configparser
 import psutil
 from file_monitor import FileMonitor
+from categorizer import default_categories, categorize_file, suggest_organization
 import win32api
 import win32gui
 import subprocess
@@ -30,38 +31,7 @@ class FileIndexer:
         self.index_file = "file_index.json"
         self.load_index()
         
-        self.categories = {
-            "documents": {
-                "extensions": [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt"],
-                "keywords": ["document", "report", "contract", "proposal", "manual"],
-                "folders": ["Documents", "Reports", "Contracts"]
-            },
-            "images": {
-                "extensions": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg"],
-                "keywords": ["photo", "image", "picture", "screenshot"],
-                "folders": ["Images", "Photos", "Screenshots"]
-            },
-            "videos": {
-                "extensions": [".mp4", ".avi", ".mov", ".wmv", ".flv", ".mkv"],
-                "keywords": ["video", "movie", "clip", "recording"],
-                "folders": ["Videos", "Movies", "Recordings"]
-            },
-            "audio": {
-                "extensions": [".mp3", ".wav", ".flac", ".aac", ".ogg"],
-                "keywords": ["audio", "music", "song", "podcast"],
-                "folders": ["Audio", "Music", "Podcasts"]
-            },
-            "archives": {
-                "extensions": [".zip", ".rar", ".7z", ".tar", ".gz"],
-                "keywords": ["archive", "backup", "compressed"],
-                "folders": ["Archives", "Backups"]
-            },
-            "code": {
-                "extensions": [".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".php"],
-                "keywords": ["code", "script", "program", "source"],
-                "folders": ["Code", "Scripts", "Projects"]
-            }
-        }
+        self.categories = default_categories()
         
         self.suggestions_queue = []
         self.is_running = False
@@ -112,63 +82,12 @@ class FileIndexer:
             print(f"Error saving index file: {e}")
     
     def categorize_file(self, file_path):
-        """Categorize a file based on extension and content analysis"""
-        try:
-            file_path = Path(file_path)
-            extension = file_path.suffix.lower()
-            filename = file_path.stem.lower()
-            
-            # Check by extension first
-            for category, rules in self.categories.items():
-                if extension in rules["extensions"]:
-                    return category
-            
-            # Check by filename keywords
-            for category, rules in self.categories.items():
-                for keyword in rules["keywords"]:
-                    if keyword in filename:
-                        return category
-            
-            return "misc"
-        except (OSError, ValueError) as e:
-            print(f"Error categorizing file {file_path}: {e}")
-            return "misc"
+        """Categorize a file based on extension and filename keywords"""
+        return categorize_file(file_path, self.categories)
     
     def suggest_organization(self, file_path):
         """Generate organization suggestions for a file"""
-        try:
-            category = self.categorize_file(file_path)
-            file_path = Path(file_path)
-            
-            suggestions = []
-            
-            if category in self.categories:
-                for folder in self.categories[category]["folders"]:
-                    # Suggest moving to category folder
-                    target_dir = file_path.parent / folder
-                    suggestions.append({
-                        "action": "move",
-                        "source": str(file_path),
-                        "destination": str(target_dir / file_path.name),
-                        "reason": f"File appears to be {category} based on extension/content"
-                    })
-            
-            # Suggest keeping in current location
-            suggestions.append({
-                "action": "keep",
-                "source": str(file_path),
-                "reason": "Keep file in current location"
-            })
-            
-            return suggestions
-        except (OSError, ValueError) as e:
-            print(f"Error generating suggestions for {file_path}: {e}")
-            # Return a basic keep suggestion if categorization fails
-            return [{
-                "action": "keep",
-                "source": str(file_path),
-                "reason": "Keep file in current location (categorization failed)"
-            }]
+        return suggest_organization(file_path, self.categories)
     
     def add_to_suggestions_queue(self, file_path):
         """Add a file to the suggestions queue for user review"""

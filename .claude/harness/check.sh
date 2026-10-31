@@ -56,10 +56,25 @@ reviewer_read_only() {
   fi
 }
 
+# Unit tests for the sorting logic (categorizer.py has no Windows imports, so
+# they run on any OS).
+tests() {
+  if ! python3 -m pytest --version >/dev/null 2>&1; then
+    python3 -m pip install -q -r requirements-dev.txt >/dev/null 2>&1 ||
+      python3 -m pip install -q --user -r requirements-dev.txt >/dev/null 2>&1
+    if ! python3 -m pytest --version >/dev/null 2>&1; then
+      echo "pytest is not installed and pip couldn't install it: run pip install -r requirements-dev.txt"
+      return 1
+    fi
+  fi
+  python3 -m pytest -q tests
+}
+
 step "syntax" syntax
 step "private files untracked" private_untracked
 step "pyflakes" lint
 step "reviewer agent is read-only" reviewer_read_only
+step "tests" tests
 
 if [ "$fail" -eq 0 ]; then echo "check: all steps passed"; fi
 exit "$fail"

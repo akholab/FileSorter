@@ -118,7 +118,7 @@ The system automatically creates configuration files:
 
 ### Adding New File Categories
 
-Edit the `categories` dictionary in `file_indexer.py`:
+Edit the `DEFAULT_CATEGORIES` dictionary in `categorizer.py`:
 
 ```python
 "new_category": {
@@ -130,7 +130,7 @@ Edit the `categories` dictionary in `file_indexer.py`:
 
 ### Modifying Organization Rules
 
-Update the `suggest_organization` method to add custom logic for file organization.
+Update the `suggest_organization` function in `categorizer.py` to add custom logic for file organization.
 
 ## Troubleshooting
 
