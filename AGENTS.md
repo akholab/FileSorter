@@ -10,11 +10,14 @@ Smart File Indexer: a personal Python desktop app (Tkinter GUI plus a system-tra
 2. Work on one task at a time.
 3. Update `progress.md`: tick finished tasks and add one line to the session log.
 4. Run `.claude/harness/check.sh`. A Stop hook runs it too and sends you back if it fails.
-5. On a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
-
-If `reviewer` or `/retro` isn't available by name (for example in a cloud session that didn't start in this repo), start a general agent and give it `.claude/agents/reviewer.md` or `.claude/skills/retro/SKILL.md` as its instructions. The reviewer's read-only hook doesn't apply to a general agent, so tell it to change nothing.
+5. For a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
+6. After the finished task is noted in `progress.md`, suggest `/clear` to the user before the next task: a fresh session reads `progress.md` and costs far less than a long one.
 
 Done means: `check` passes, the reviewer's findings are fixed or answered, and the change is described in `progress.md`.
+
+`/cleanup`, meant to run weekly as a scheduled task, fixes drift in harness and doc files and opens one pull request for review.
+
+If `reviewer`, `/retro` or `/cleanup` isn't available by name (for example, a session that didn't start in this folder), start a general agent and give it `.claude/agents/reviewer.md` or the skill's `SKILL.md` as its instructions. The reviewer's read-only hook doesn't apply to a general agent, so tell it to change nothing.
 
 ## Writing code
 
@@ -22,8 +25,21 @@ Done means: `check` passes, the reviewer's findings are fixed or answered, and t
 - Make the smallest change that fully solves the task. Take the first that works: skip what nobody asked for (name it in one line), reuse code already in this repo, the standard library, an installed dependency, then new code. No new dependency for a few lines; no abstraction, option or config nobody asked for.
 - Finish every part the change breaks: callers, tests, fixtures, config. For a bug, grep every caller first and fix the root cause once in the shared code.
 - Never cut: validation of outside input, error handling that prevents data loss, security, accessibility, or anything the user asked for.
+- When a task depends on outside facts (a library's behaviour, an API, a price), check current sources, cite them, and add what's worth keeping to `research.md`.
 - A shortcut with a known limit gets a comment: `shortcut: <the limit>, <when to upgrade>`.
 - When you report a finished task to the user, end with one line: what you skipped or didn't check, and any risk. Subagents with their own output format (like `reviewer`) skip this.
+
+## Model and effort
+
+When you start a subagent or pick a model for a step, match it to the job. The session's own model is the user's choice.
+
+| Job | Model | Effort |
+|---|---|---|
+| Search, lookups, reading logs | `haiku` | `low` |
+| Routine edits, running tests, mechanical fixes | `sonnet` | `medium` |
+| Planning and design | `opus` | `high` |
+
+The kit's own agents and skills set theirs in their frontmatter (`reviewer` and `/retro` opus/medium, `/cleanup` and `/harness-update` sonnet/medium). Use `max` effort only when the user asks. Put verbose work (test runs, long logs, docs) in a subagent so only its summary comes back.
 
 ## Commands
 
@@ -45,7 +61,8 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 - `*.bat`, `FileManager.vbs`: Windows-only launchers and installers.
 - `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json`: created at runtime in the working directory. Git-ignored.
 - `README.md`: features, launch options, how to add categories.
-- `.claude/harness/`: check, progress file and hooks (see its `README.md`). `.claude/agents/reviewer.md`: the read-only reviewer for step 5. `.claude/skills/retro/`: `/retro`.
+- `.claude/harness/`: check, progress file and hooks (see its `README.md`). `.claude/agents/reviewer.md`: the read-only reviewer for step 5. `.claude/skills/`: `/retro`, `/cleanup`, `/harness-update`. `.claude/harness/kit-version`: the kit commit this harness was last updated from.
+- `research.md`: outside facts worth keeping, with sources; longer research lives in `docs/research/`.
 - The default branch is `master`, not `main`: branch from and open PRs against `master`.
 
 ## Boundaries

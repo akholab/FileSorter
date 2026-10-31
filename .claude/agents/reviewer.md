@@ -3,7 +3,7 @@ name: reviewer
 description: Read-only code reviewer. Reviews the current branch's changes against AGENTS.md (standards) and the open task (spec), and returns at most 10 findings. Use before saying done on any change to code, config or the harness.
 tools: Read, Grep, Glob, Bash
 model: opus
-effort: high
+effort: medium
 hooks:
   PreToolUse:
     - matcher: "Bash"

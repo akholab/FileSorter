@@ -2,6 +2,8 @@
 name: retro
 description: Review a past coding session and propose harness fixes (AGENTS.md, check.sh, guard rules, hooks) so the same mistakes can't recur. Use only when the user types /retro.
 disable-model-invocation: true
+model: opus
+effort: medium
 ---
 
 Adapted from mattpocock/skills `retro` and `writing-for-agents` (MIT, © 2026 Matt Pocock) for the agent harness kit.
