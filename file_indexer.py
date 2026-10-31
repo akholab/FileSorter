@@ -18,6 +18,7 @@ from file_monitor import FileMonitor
 from categorizer import default_categories, categorize_file, suggest_organization
 from safemove import UndoLog, safe_move, trash_file, undo_move
 from filewatch import get_settle_seconds, is_partial_name, is_still_changing
+from learning import KEEP, Learner, get_threshold
 import win32api
 import win32gui
 import subprocess
@@ -41,6 +42,8 @@ class FileIndexer:
         self.user_activity_threshold = 30  # seconds of inactivity before showing popups
         self.undo_log = UndoLog("file_undo_log.json")  # Last 500 actions, kept on disk
         self.last_error = ""  # Why the last execute_suggestion call returned False
+        # Where you usually put each kind of file (extension + watched folder)
+        self.learner = Learner("file_learned_choices.json", get_threshold(self.config))
         
     def load_config(self):
         """Load configuration from file"""
@@ -87,8 +90,32 @@ class FileIndexer:
         return categorize_file(file_path, self.categories)
     
     def suggest_organization(self, file_path):
-        """Generate organization suggestions for a file"""
-        return suggest_organization(file_path, self.categories)
+        """Generate organization suggestions for a file, with the folder you
+        usually pick for this kind of file first"""
+        suggestions = suggest_organization(file_path, self.categories)
+        return self.learner.apply(file_path, suggestions, self.file_monitor.get_monitored_directories())
+    
+    def learn_from_move(self, source, destination, seen=None):
+        """Count a move (or, with destination=None, a Keep) as a vote.
+
+        Returns the details to store with the undo entry so Undo can take the
+        vote back. Pass a set as `seen` so a bulk move counts once per group.
+        """
+        try:
+            if destination is not None and os.path.normcase(str(Path(destination).parent)) == os.path.normcase(str(Path(source).parent)):
+                return {}  # the file did not go anywhere: nothing to learn
+            roots = self.file_monitor.get_monitored_directories()
+            key = Learner.key_for(source, roots)
+            if seen is not None:
+                if key in seen:
+                    return {}
+                seen.add(key)
+            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent, roots)
+            return {"learn_key": key, "learn_dest": dest}
+        except Exception as e:
+            # Learning is best effort: it must never make a finished move look failed
+            print(f"Could not learn from this action: {e}")
+            return {}
     
     def add_to_suggestions_queue(self, file_path):
         """Add a file to the suggestions queue for user review"""
@@ -129,6 +156,12 @@ class FileIndexer:
         self.undo_log.pop_last()
         return success, message
     
+    def _take_back_vote(self, action):
+        """Undoing a move or a keep also takes back what it taught"""
+        details = action.get("details") or {}
+        if "learn_key" in details and "learn_dest" in details:
+            self.learner.retract(details["learn_key"], details["learn_dest"])
+    
     def _undo_entry(self, last_action):
         """Undo one logged action and return (success, message)"""
         if last_action["type"] == "moved":
@@ -136,6 +169,7 @@ class FileIndexer:
             current_path = Path(last_action["file_path"])
             success, message, _ = undo_move(last_action)
             if success:
+                self._take_back_vote(last_action)
                 # Remove from index
                 if str(current_path) in self.index_data:
                     del self.index_data[str(current_path)]
@@ -149,6 +183,7 @@ class FileIndexer:
         
         elif last_action["type"] == "kept":
             # Undo keep: just remove from index
+            self._take_back_vote(last_action)
             file_path = Path(last_action["file_path"])
             if str(file_path) in self.index_data:
                 del self.index_data[str(file_path)]
@@ -184,10 +219,10 @@ class FileIndexer:
                 # Move the file (never overwrites; renames on a name clash)
                 destination = safe_move(source, destination)
                 
-                # Record action for undo
-                self.record_action("moved", destination, {
-                    "original_path": str(source)
-                })
+                # Record action for undo (and count it as a vote)
+                details = {"original_path": str(source)}
+                details.update(self.learn_from_move(source, destination))
+                self.record_action("moved", destination, details)
                 
                 # Update index
                 self.index_data[str(destination)] = {
@@ -205,8 +240,9 @@ class FileIndexer:
                     "timestamp": datetime.now().isoformat()
                 }
                 
-                # Record action for undo
-                self.record_action("kept", Path(suggestion["source"]))
+                # Record action for undo (and count it as a vote)
+                self.record_action("kept", Path(suggestion["source"]),
+                                   self.learn_from_move(suggestion["source"], None))
             
             self.save_index()
             return True
@@ -671,6 +707,8 @@ class FileIndexerGUI:
                 display_text = f"Move to: {Path(suggestion_option['destination']).parent}"
             else:
                 display_text = "Keep in current location"
+            if suggestion_option.get("learned_count"):
+                display_text += f"  (your usual, {suggestion_option['learned_count']} times)"
             suggestions_listbox.insert(tk.END, display_text)
         
         # Action buttons
@@ -727,10 +765,10 @@ class FileIndexerGUI:
                 # Move the file (never overwrites; renames on a name clash)
                 dest_path = safe_move(source_path, dest_path)
                 
-                # Record action for undo
-                self.indexer.record_action("moved", dest_path, {
-                    "original_path": str(source_path)
-                })
+                # Record action for undo (and count it as a vote)
+                details = {"original_path": str(source_path)}
+                details.update(self.indexer.learn_from_move(source_path, dest_path))
+                self.indexer.record_action("moved", dest_path, details)
                 
                 # Update index
                 self.indexer.index_data[str(dest_path)] = {
@@ -876,6 +914,7 @@ class FileIndexerGUI:
             try:
                 moved_count = 0
                 failed_count = 0
+                learned_groups = set()
                 
                 # Find all files in this directory and subdirectories
                 files_to_move = []
@@ -900,10 +939,10 @@ class FileIndexerGUI:
                         # Move the file (never overwrites; renames on a name clash)
                         dest_path = safe_move(file_path, dest_path)
                         
-                        # Record action for undo
-                        self.indexer.record_action("moved", dest_path, {
-                            "original_path": str(file_path)
-                        })
+                        # Record action for undo (a bulk move is one vote per kind of file)
+                        details = {"original_path": str(file_path)}
+                        details.update(self.indexer.learn_from_move(file_path, dest_path, learned_groups))
+                        self.indexer.record_action("moved", dest_path, details)
                         
                         # Update index
                         self.indexer.index_data[str(dest_path)] = {
@@ -943,6 +982,7 @@ class FileIndexerGUI:
         
         try:
             kept_count = 0
+            learned_groups = set()
             
             # Find all files in this directory and subdirectories
             files_to_keep = []
@@ -962,8 +1002,9 @@ class FileIndexerGUI:
                         "timestamp": datetime.now().isoformat()
                     }
                     
-                    # Record action for undo
-                    self.indexer.record_action("kept", file_path)
+                    # Record action for undo (a bulk keep is one vote per kind of file)
+                    self.indexer.record_action("kept", file_path,
+                                               self.indexer.learn_from_move(file_path, None, learned_groups))
                     
                     # Remove from queue
                     self.indexer.suggestions_queue.pop(i)

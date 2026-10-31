@@ -74,6 +74,7 @@ Thumbs.db
 file_index.json
 file_indexer_config.ini
 file_undo_log.json
+file_learned_choices.json
 
 # Agent harness scratch files
 .claude/harness/.state/

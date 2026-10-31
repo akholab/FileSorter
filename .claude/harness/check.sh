@@ -42,7 +42,7 @@ lint() {
 # but `git add -f` or an edited .gitignore could bring them back).
 private_untracked() {
   local tracked
-  tracked=$(git ls-files -- file_index.json file_indexer_config.ini file_undo_log.json)
+  tracked=$(git ls-files -- file_index.json file_indexer_config.ini file_undo_log.json file_learned_choices.json)
   [ -z "$tracked" ] || { echo "Personal data files are tracked by git: $tracked. Run git rm --cached on them."; return 1; }
 }
 
