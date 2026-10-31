@@ -6,7 +6,6 @@ A Python-based file indexing and organization system for Windows.
 import os
 import platform
 import json
-import shutil
 import time
 import threading
 from pathlib import Path
@@ -16,6 +15,10 @@ from tkinter import ttk, messagebox, filedialog
 import configparser
 import psutil
 from file_monitor import FileMonitor
+from categorizer import default_categories, categorize_file, suggest_organization
+from safemove import UndoLog, safe_move, trash_file, undo_move
+from filewatch import get_settle_seconds, is_partial_name, is_still_changing
+from learning import KEEP, Learner, get_threshold
 import win32api
 import win32gui
 import subprocess
@@ -30,46 +33,17 @@ class FileIndexer:
         self.index_file = "file_index.json"
         self.load_index()
         
-        self.categories = {
-            "documents": {
-                "extensions": [".pdf", ".doc", ".docx", ".txt", ".rtf", ".odt"],
-                "keywords": ["document", "report", "contract", "proposal", "manual"],
-                "folders": ["Documents", "Reports", "Contracts"]
-            },
-            "images": {
-                "extensions": [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".tiff", ".svg"],
-                "keywords": ["photo", "image", "picture", "screenshot"],
-                "folders": ["Images", "Photos", "Screenshots"]
-            },
-            "videos": {
-                "extensions": [".mp4", ".avi", ".mov", ".wmv", ".flv", ".mkv"],
-                "keywords": ["video", "movie", "clip", "recording"],
-                "folders": ["Videos", "Movies", "Recordings"]
-            },
-            "audio": {
-                "extensions": [".mp3", ".wav", ".flac", ".aac", ".ogg"],
-                "keywords": ["audio", "music", "song", "podcast"],
-                "folders": ["Audio", "Music", "Podcasts"]
-            },
-            "archives": {
-                "extensions": [".zip", ".rar", ".7z", ".tar", ".gz"],
-                "keywords": ["archive", "backup", "compressed"],
-                "folders": ["Archives", "Backups"]
-            },
-            "code": {
-                "extensions": [".py", ".js", ".html", ".css", ".java", ".cpp", ".c", ".php"],
-                "keywords": ["code", "script", "program", "source"],
-                "folders": ["Code", "Scripts", "Projects"]
-            }
-        }
+        self.categories = default_categories()
         
         self.suggestions_queue = []
         self.is_running = False
         self.file_monitor = FileMonitor(self)
         self.last_user_activity = time.time()
         self.user_activity_threshold = 30  # seconds of inactivity before showing popups
-        self.action_history = []  # Store actions for undo functionality
-        self.max_history = 50  # Maximum number of actions to remember
+        self.undo_log = UndoLog("file_undo_log.json")  # Last 500 actions, kept on disk
+        self.last_error = ""  # Why the last execute_suggestion call returned False
+        # Where you usually put each kind of file (extension + watched folder)
+        self.learner = Learner("file_learned_choices.json", get_threshold(self.config))
         
     def load_config(self):
         """Load configuration from file"""
@@ -112,63 +86,36 @@ class FileIndexer:
             print(f"Error saving index file: {e}")
     
     def categorize_file(self, file_path):
-        """Categorize a file based on extension and content analysis"""
-        try:
-            file_path = Path(file_path)
-            extension = file_path.suffix.lower()
-            filename = file_path.stem.lower()
-            
-            # Check by extension first
-            for category, rules in self.categories.items():
-                if extension in rules["extensions"]:
-                    return category
-            
-            # Check by filename keywords
-            for category, rules in self.categories.items():
-                for keyword in rules["keywords"]:
-                    if keyword in filename:
-                        return category
-            
-            return "misc"
-        except (OSError, ValueError) as e:
-            print(f"Error categorizing file {file_path}: {e}")
-            return "misc"
+        """Categorize a file based on extension and filename keywords"""
+        return categorize_file(file_path, self.categories)
     
     def suggest_organization(self, file_path):
-        """Generate organization suggestions for a file"""
+        """Generate organization suggestions for a file, with the folder you
+        usually pick for this kind of file first"""
+        suggestions = suggest_organization(file_path, self.categories)
+        return self.learner.apply(file_path, suggestions, self.file_monitor.get_monitored_directories())
+    
+    def learn_from_move(self, source, destination, seen=None):
+        """Count a move (or, with destination=None, a Keep) as a vote.
+
+        Returns the details to store with the undo entry so Undo can take the
+        vote back. Pass a set as `seen` so a bulk move counts once per group.
+        """
         try:
-            category = self.categorize_file(file_path)
-            file_path = Path(file_path)
-            
-            suggestions = []
-            
-            if category in self.categories:
-                for folder in self.categories[category]["folders"]:
-                    # Suggest moving to category folder
-                    target_dir = file_path.parent / folder
-                    suggestions.append({
-                        "action": "move",
-                        "source": str(file_path),
-                        "destination": str(target_dir / file_path.name),
-                        "reason": f"File appears to be {category} based on extension/content"
-                    })
-            
-            # Suggest keeping in current location
-            suggestions.append({
-                "action": "keep",
-                "source": str(file_path),
-                "reason": "Keep file in current location"
-            })
-            
-            return suggestions
-        except (OSError, ValueError) as e:
-            print(f"Error generating suggestions for {file_path}: {e}")
-            # Return a basic keep suggestion if categorization fails
-            return [{
-                "action": "keep",
-                "source": str(file_path),
-                "reason": "Keep file in current location (categorization failed)"
-            }]
+            if destination is not None and os.path.normcase(str(Path(destination).parent)) == os.path.normcase(str(Path(source).parent)):
+                return {}  # the file did not go anywhere: nothing to learn
+            roots = self.file_monitor.get_monitored_directories()
+            key = Learner.key_for(source, roots)
+            if seen is not None:
+                if key in seen:
+                    return {}
+                seen.add(key)
+            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent, roots)
+            return {"learn_key": key, "learn_dest": dest}
+        except Exception as e:
+            # Learning is best effort: it must never make a finished move look failed
+            print(f"Could not learn from this action: {e}")
+            return {}
     
     def add_to_suggestions_queue(self, file_path):
         """Add a file to the suggestions queue for user review"""
@@ -191,77 +138,91 @@ class FileIndexer:
         return None
     
     def record_action(self, action_type, file_path, details=None):
-        """Record an action for undo functionality"""
-        action = {
-            "type": action_type,
-            "file_path": str(file_path),
-            "timestamp": datetime.now().isoformat(),
-            "details": details or {}
-        }
-        
-        self.action_history.append(action)
-        
-        # Keep only the last max_history actions
-        if len(self.action_history) > self.max_history:
-            self.action_history.pop(0)
+        """Record an action for undo functionality (saved to disk)"""
+        self.undo_log.record(action_type, file_path, details)
     
     def undo_last_action(self):
         """Undo the last action performed"""
-        if not self.action_history:
+        last_action = self.undo_log.peek_last()
+        if last_action is None:
             return False, "No actions to undo"
         
-        last_action = self.action_history.pop()
-        
         try:
-            if last_action["type"] == "moved":
-                # Undo move: move file back to original location
-                current_path = Path(last_action["file_path"])
-                original_path = Path(last_action["details"]["original_path"])
-                
-                if current_path.exists():
-                    shutil.move(str(current_path), str(original_path))
-                    # Remove from index
-                    if str(current_path) in self.index_data:
-                        del self.index_data[str(current_path)]
-                    return True, f"Undid move: {current_path.name} moved back to {original_path.parent}"
-                else:
-                    return False, f"File not found: {current_path}"
-            
-            elif last_action["type"] == "deleted":
-                # Undo delete: restore from recycle bin or show message
-                file_path = Path(last_action["file_path"])
-                return False, f"Cannot undo delete: {file_path.name} was permanently deleted"
-            
-            elif last_action["type"] == "kept":
-                # Undo keep: just remove from index
-                file_path = Path(last_action["file_path"])
-                if str(file_path) in self.index_data:
-                    del self.index_data[str(file_path)]
-                return True, f"Undid keep action for: {file_path.name}"
-            
-            else:
-                return False, f"Unknown action type: {last_action['type']}"
-                
+            success, message = self._undo_entry(last_action)
         except Exception as e:
+            # Keep the entry in the log so the user can try again
             return False, f"Error undoing action: {e}"
+        
+        self.undo_log.pop_last()
+        return success, message
+    
+    def _take_back_vote(self, action):
+        """Undoing a move or a keep also takes back what it taught"""
+        details = action.get("details") or {}
+        if "learn_key" in details and "learn_dest" in details:
+            self.learner.retract(details["learn_key"], details["learn_dest"])
+    
+    def _undo_entry(self, last_action):
+        """Undo one logged action and return (success, message)"""
+        if last_action["type"] == "moved":
+            # Undo move: put the file back without overwriting anything
+            current_path = Path(last_action["file_path"])
+            success, message, _ = undo_move(last_action)
+            if success:
+                self._take_back_vote(last_action)
+                # Remove from index
+                if str(current_path) in self.index_data:
+                    del self.index_data[str(current_path)]
+                    self.save_index()
+            return success, message
+        
+        elif last_action["type"] == "deleted":
+            # Deleted files go to the Recycle Bin; restoring is manual
+            file_path = Path(last_action["file_path"])
+            return False, f"Cannot undo delete here: {file_path.name} is in the Recycle Bin. Restore it from there."
+        
+        elif last_action["type"] == "kept":
+            # Undo keep: just remove from index
+            self._take_back_vote(last_action)
+            file_path = Path(last_action["file_path"])
+            if str(file_path) in self.index_data:
+                del self.index_data[str(file_path)]
+                self.save_index()
+            return True, f"Undid keep action for: {file_path.name}"
+        
+        else:
+            return False, f"Unknown action type: {last_action['type']}"
+    
+    def move_blocker(self, file_path):
+        """Return a message if the file must not be moved yet, else None.
+
+        A file that was modified in the last few seconds is probably still
+        being downloaded or copied. (`settle_seconds` in the config, default 5.)
+        """
+        if is_still_changing(file_path, get_settle_seconds(self.config)):
+            return f"{Path(file_path).name} is still being written. Try again in a few seconds."
+        return None
     
     def execute_suggestion(self, suggestion, action):
         """Execute a user-approved suggestion"""
+        self.last_error = ""
         try:
             if action == "move":
                 source = Path(suggestion["source"])
                 destination = Path(suggestion["destination"])
                 
-                # Create destination directory if it doesn't exist
-                destination.parent.mkdir(parents=True, exist_ok=True)
+                blocker = self.move_blocker(source)
+                if blocker:
+                    self.last_error = blocker
+                    return False
                 
-                # Move the file
-                shutil.move(str(source), str(destination))
+                # Move the file (never overwrites; renames on a name clash)
+                destination = safe_move(source, destination)
                 
-                # Record action for undo
-                self.record_action("moved", destination, {
-                    "original_path": str(source)
-                })
+                # Record action for undo (and count it as a vote)
+                details = {"original_path": str(source)}
+                details.update(self.learn_from_move(source, destination))
+                self.record_action("moved", destination, details)
                 
                 # Update index
                 self.index_data[str(destination)] = {
@@ -279,14 +240,16 @@ class FileIndexer:
                     "timestamp": datetime.now().isoformat()
                 }
                 
-                # Record action for undo
-                self.record_action("kept", Path(suggestion["source"]))
+                # Record action for undo (and count it as a vote)
+                self.record_action("kept", Path(suggestion["source"]),
+                                   self.learn_from_move(suggestion["source"], None))
             
             self.save_index()
             return True
             
         except Exception as e:
             print(f"Error executing suggestion: {e}")
+            self.last_error = str(e)
             return False
     
     def should_process_file(self, file_path):
@@ -305,6 +268,10 @@ class FileIndexer:
             exclude_folders = {folder.strip() for folder in exclude_folders if folder.strip()}
             include_extensions = {ext.strip() for ext in include_extensions if ext.strip()}
             include_folders = {folder.strip() for folder in include_folders if folder.strip()}
+            
+            # Skip unfinished downloads (.crdownload, .part, ...)
+            if is_partial_name(path):
+                return False
             
             # Check exclude extensions
             if path.suffix.lower() in exclude_extensions:
@@ -740,6 +707,8 @@ class FileIndexerGUI:
                 display_text = f"Move to: {Path(suggestion_option['destination']).parent}"
             else:
                 display_text = "Keep in current location"
+            if suggestion_option.get("learned_count"):
+                display_text += f"  (your usual, {suggestion_option['learned_count']} times)"
             suggestions_listbox.insert(tk.END, display_text)
         
         # Action buttons
@@ -751,9 +720,13 @@ class FileIndexerGUI:
             if selection:
                 selected_suggestion = suggestion["suggestions"][selection[0]]
                 if selected_suggestion["action"] == "move":
-                    self.indexer.execute_suggestion(selected_suggestion, "move")
+                    done = self.indexer.execute_suggestion(selected_suggestion, "move")
                 else:
-                    self.indexer.execute_suggestion(selected_suggestion, "keep")
+                    done = self.indexer.execute_suggestion(selected_suggestion, "keep")
+                if not done:
+                    # Keep the file in the queue and the popup open
+                    messagebox.showwarning("Could not complete", self.indexer.last_error or "Failed to organize file")
+                    return
                 
                 # Remove from queue
                 self.indexer.suggestions_queue.pop(0)
@@ -784,11 +757,18 @@ class FileIndexerGUI:
                 source_path = Path(suggestion["file_path"])
                 dest_path = Path(destination) / source_path.name
                 
-                # Create destination directory if it doesn't exist
-                dest_path.parent.mkdir(parents=True, exist_ok=True)
+                blocker = self.indexer.move_blocker(source_path)
+                if blocker:
+                    messagebox.showwarning("Not moved", blocker)
+                    return
                 
-                # Move the file
-                shutil.move(str(source_path), str(dest_path))
+                # Move the file (never overwrites; renames on a name clash)
+                dest_path = safe_move(source_path, dest_path)
+                
+                # Record action for undo (and count it as a vote)
+                details = {"original_path": str(source_path)}
+                details.update(self.indexer.learn_from_move(source_path, dest_path))
+                self.indexer.record_action("moved", dest_path, details)
                 
                 # Update index
                 self.indexer.index_data[str(dest_path)] = {
@@ -802,7 +782,7 @@ class FileIndexerGUI:
                 # Remove from queue
                 self.indexer.suggestions_queue.pop(index)
                 self.update_suggestions_list()
-                messagebox.showinfo("Success", f"File moved to {destination}")
+                messagebox.showinfo("Success", f"File moved to {dest_path}")
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to move file: {e}")
@@ -824,6 +804,8 @@ class FileIndexerGUI:
                     self.indexer.suggestions_queue.pop(index)
                     self.update_suggestions_list()
                     messagebox.showinfo("Success", "File kept in current location!")
+                else:
+                    messagebox.showwarning("Could not complete", self.indexer.last_error or "Failed to keep file")
                 break
     
     def preview_file(self):
@@ -864,23 +846,23 @@ class FileIndexerGUI:
         # Confirm deletion
         result = messagebox.askyesno(
             "Confirm Delete", 
-            f"Are you sure you want to permanently delete:\n{file_path.name}\n\nThis action cannot be undone!",
+            f"Move to the Recycle Bin:\n{file_path.name}\n\nYou can restore it from the Recycle Bin.",
             icon='warning'
         )
         
         if result:
             try:
-                # Record action for undo (even though we can't undo delete)
-                self.indexer.record_action("deleted", file_path)
+                # Send the file to the Recycle Bin (never deletes it for good)
+                trash_file(file_path)
                 
-                # Delete the file
-                os.remove(str(file_path))
+                # Record the action in the undo log
+                self.indexer.record_action("deleted", file_path)
                 
                 # Remove from queue
                 self.indexer.suggestions_queue.pop(index)
                 self.update_suggestions_list()
                 
-                messagebox.showinfo("Success", f"Deleted: {file_path.name}")
+                messagebox.showinfo("Success", f"Moved to the Recycle Bin: {file_path.name}")
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to delete file: {e}")
@@ -932,6 +914,7 @@ class FileIndexerGUI:
             try:
                 moved_count = 0
                 failed_count = 0
+                learned_groups = set()
                 
                 # Find all files in this directory and subdirectories
                 files_to_move = []
@@ -946,16 +929,20 @@ class FileIndexerGUI:
                     try:
                         dest_path = Path(destination) / file_path.name
                         
-                        # Create destination directory if it doesn't exist
-                        dest_path.parent.mkdir(parents=True, exist_ok=True)
+                        # Skip files that are still being written; they stay in the queue
+                        blocker = self.indexer.move_blocker(file_path)
+                        if blocker:
+                            print(blocker)
+                            failed_count += 1
+                            continue
                         
-                        # Move the file
-                        shutil.move(str(file_path), str(dest_path))
+                        # Move the file (never overwrites; renames on a name clash)
+                        dest_path = safe_move(file_path, dest_path)
                         
-                        # Record action for undo
-                        self.indexer.record_action("moved", dest_path, {
-                            "original_path": str(file_path)
-                        })
+                        # Record action for undo (a bulk move is one vote per kind of file)
+                        details = {"original_path": str(file_path)}
+                        details.update(self.indexer.learn_from_move(file_path, dest_path, learned_groups))
+                        self.indexer.record_action("moved", dest_path, details)
                         
                         # Update index
                         self.indexer.index_data[str(dest_path)] = {
@@ -995,6 +982,7 @@ class FileIndexerGUI:
         
         try:
             kept_count = 0
+            learned_groups = set()
             
             # Find all files in this directory and subdirectories
             files_to_keep = []
@@ -1014,8 +1002,9 @@ class FileIndexerGUI:
                         "timestamp": datetime.now().isoformat()
                     }
                     
-                    # Record action for undo
-                    self.indexer.record_action("kept", file_path)
+                    # Record action for undo (a bulk keep is one vote per kind of file)
+                    self.indexer.record_action("kept", file_path,
+                                               self.indexer.learn_from_move(file_path, None, learned_groups))
                     
                     # Remove from queue
                     self.indexer.suggestions_queue.pop(i)

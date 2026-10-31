@@ -42,13 +42,39 @@ lint() {
 # but `git add -f` or an edited .gitignore could bring them back).
 private_untracked() {
   local tracked
-  tracked=$(git ls-files -- file_index.json file_indexer_config.ini)
+  tracked=$(git ls-files -- file_index.json file_indexer_config.ini file_undo_log.json file_learned_choices.json)
   [ -z "$tracked" ] || { echo "Personal data files are tracked by git: $tracked. Run git rm --cached on them."; return 1; }
+}
+
+# The reviewer subagent must stay read-only: no editing tools in its tools line.
+reviewer_read_only() {
+  local f=.claude/agents/reviewer.md tools
+  tools=$(awk '/^---$/ { n++; next } n == 1 && sub(/^tools:[[:space:]]*/, "")' "$f")
+  [ -n "$tools" ] || { echo "$f: no tools line (it would inherit every tool)"; return 1; }
+  if printf '%s\n' "$tools" | grep -qwE 'Edit|Write|NotebookEdit|MultiEdit'; then
+    echo "$f: tools include an editing tool: $tools"; return 1
+  fi
+}
+
+# Unit tests for the pure modules (categorizer.py, safemove.py: no Windows
+# imports, so they run on any OS).
+tests() {
+  if ! python3 -m pytest --version >/dev/null 2>&1; then
+    python3 -m pip install -q -r requirements-dev.txt >/dev/null 2>&1 ||
+      python3 -m pip install -q --user -r requirements-dev.txt >/dev/null 2>&1
+    if ! python3 -m pytest --version >/dev/null 2>&1; then
+      echo "pytest is not installed and pip couldn't install it: run pip install -r requirements-dev.txt"
+      return 1
+    fi
+  fi
+  python3 -m pytest -q tests
 }
 
 step "syntax" syntax
 step "private files untracked" private_untracked
 step "pyflakes" lint
+step "reviewer agent is read-only" reviewer_read_only
+step "tests" tests
 
 if [ "$fail" -eq 0 ]; then echo "check: all steps passed"; fi
 exit "$fail"

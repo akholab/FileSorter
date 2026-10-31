@@ -145,6 +145,8 @@ class TrayFileIndexer:
                 display_text = f"Move to: {Path(option['destination']).parent}"
             else:
                 display_text = "Keep in current location"
+            if option.get("learned_count"):
+                display_text += f"  (your usual, {option['learned_count']} times)"
             options_listbox.insert(tk.END, display_text)
         
         # Action buttons
@@ -158,7 +160,7 @@ class TrayFileIndexer:
                     options_window.destroy()
                     messagebox.showinfo("Success", "File organized successfully!")
                 else:
-                    messagebox.showerror("Error", "Failed to organize file")
+                    messagebox.showerror("Error", self.indexer.last_error or "Failed to organize file")
         
         def skip_file():
             self.indexer.suggestions_queue.remove(suggestion)

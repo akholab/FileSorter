@@ -15,6 +15,17 @@ if setup_pending; then
   exit 0
 fi
 
+# Claude Code skips the reviewer's own hook in folders it hasn't trusted.
+# guard.sh still enforces it, but ask the user rather than skip silently.
+# Not in cloud sessions: each one starts in a fresh, untrusted container.
+# Only on a fresh start, not on resume, clear or compact.
+source=$(json_field "$input" source)
+if [ "$source" = startup ] && [ "${CLAUDE_CODE_REMOTE:-}" != true ] && ! folder_trusted; then
+  echo "Claude Code hasn't trusted this folder yet, so it skips hooks in agent files (the reviewer's read-only hook; guard.sh still enforces it)."
+  echo "If the user is here, ask them once whether to trust it: they run \`claude\` in this folder and accept the trust prompt (takes effect next session). Don't edit ~/.claude.json yourself. In an unattended run, mention it in your final report instead."
+  echo
+fi
+
 progress="$HARNESS_DIR/progress.md"
 if [ -f "$progress" ]; then
   echo "Harness progress file (.claude/harness/progress.md), first 60 lines:"
