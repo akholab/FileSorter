@@ -170,7 +170,8 @@ class LauncherGUI:
                 except subprocess.TimeoutExpired:
                     progress_window.after(0, lambda: self.handle_install_timeout(progress_window))
                 except Exception as e:
-                    progress_window.after(0, lambda: self.handle_install_error(str(e), progress_window))
+                    error = str(e)
+                    progress_window.after(0, lambda: self.handle_install_error(error, progress_window))
             
             import threading
             threading.Thread(target=install_thread, daemon=True).start()

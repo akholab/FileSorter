@@ -4,6 +4,7 @@ A Python-based file indexing and organization system for Windows.
 """
 
 import os
+import platform
 import json
 import shutil
 import time

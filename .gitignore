@@ -70,3 +70,9 @@ Thumbs.db
 *.log
 *.tmp
 *.temp 
+# Runtime data (personal paths, created on first run)
+file_index.json
+file_indexer_config.ini
+
+# Agent harness scratch files
+.claude/harness/.state/
