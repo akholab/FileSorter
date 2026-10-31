@@ -20,6 +20,7 @@ An intelligent file sorter that runs on all of the owner's devices, not just Win
 ## Session log
 
 <!-- Newest first. One line per session: date, what changed, what's next or blocked. -->
+- 2026-10-31: Synced lean-code rules from the kit (MyClaudeSettings Q22-Q25, from ponytail): AGENTS.md "Writing code" section, reviewer traces callers and reports lean findings, /retro checks `shortcut:` comments.
 - 2026-10-31: Synced kit PR #6: reviewer's Bash is read-only (reviewer-bash.sh via its frontmatter hook and guard.sh), session start asks to trust an untrusted folder.
 - 2026-10-31: retro: `tests/test_categories_pinned.py` now enforces the "ask before changing category rules" rule; AGENTS notes that `gh pr view` fails in cloud sessions. Skipped: "reviewer unavailable" is already covered by AGENTS (use a general agent with reviewer.md); the miss was mine.
 - 2026-10-31: learning from choices: new `learning.py` (votes per extension + watched folder, saved to `file_learned_choices.json`; a move or Keep is a vote, Skip is not; after `learn_threshold` votes, default 2, the most-voted folder goes first; Undo takes the vote back; a bulk move is one vote per kind of file). `tests/test_indexer_integration.py` runs the real `FileIndexer` with GUI/win32 libraries stubbed, which also covers the safe-move and finished-file wiring. 50 new tests. GUI popups not run here. All four planned PRs are open; next is the Windows test run.

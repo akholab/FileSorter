@@ -18,6 +18,7 @@ A retro improves the **harness** (the files that steer and check agents), using 
    - **Known mistakes:** a judgement call no check can make goes in `AGENTS.md` under "Known mistakes", one line, phrased as what to do.
    - **No-ops and bloat:** lines in `AGENTS.md` that didn't change what the agent did, repeat what the code or config already shows, or tell the model something it does by default. Propose deleting them.
    - **Missing information:** logs, commands or access the agent needed but didn't have.
+   - **Shortcuts:** check this every retro, even if no session problem points to it. List deliberate shortcuts with `git grep -nE '(#|//|/[*]|<!--|--|^[[:space:]]*[*]) ?shortcut:'` (the `shortcut: <limit>, <when to upgrade>` comments from `AGENTS.md`). For any that names no upgrade trigger, or whose limit the project has already passed, propose a new open task in `progress.md`; never edit the code itself. Idea from DietrichGebert/ponytail `ponytail-debt` (MIT).
    - **Progress handoff:** did the session start without knowing what the last one did? Fix `.claude/harness/progress.md`.
 
    Done when every problem from step 1 has a candidate, or a note that no harness change would help.
