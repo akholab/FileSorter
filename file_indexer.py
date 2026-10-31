@@ -17,6 +17,7 @@ import psutil
 from file_monitor import FileMonitor
 from categorizer import default_categories, categorize_file, suggest_organization
 from safemove import UndoLog, safe_move, trash_file, undo_move
+from filewatch import is_still_changing
 import win32api
 import win32gui
 import subprocess
@@ -39,6 +40,7 @@ class FileIndexer:
         self.last_user_activity = time.time()
         self.user_activity_threshold = 30  # seconds of inactivity before showing popups
         self.undo_log = UndoLog("file_undo_log.json")  # Last 500 actions, kept on disk
+        self.last_error = ""  # Why the last execute_suggestion call returned False
         
     def load_config(self):
         """Load configuration from file"""
@@ -156,12 +158,29 @@ class FileIndexer:
         else:
             return False, f"Unknown action type: {last_action['type']}"
     
+    def move_blocker(self, file_path):
+        """Return a message if the file must not be moved yet, else None.
+
+        A file that was modified in the last few seconds is probably still
+        being downloaded or copied. (`settle_seconds` in the config, default 5.)
+        """
+        quiet = self.config.getfloat('DEFAULT', 'settle_seconds', fallback=5.0)
+        if is_still_changing(file_path, quiet):
+            return f"{Path(file_path).name} is still being written. Try again in a few seconds."
+        return None
+    
     def execute_suggestion(self, suggestion, action):
         """Execute a user-approved suggestion"""
+        self.last_error = ""
         try:
             if action == "move":
                 source = Path(suggestion["source"])
                 destination = Path(suggestion["destination"])
+                
+                blocker = self.move_blocker(source)
+                if blocker:
+                    self.last_error = blocker
+                    return False
                 
                 # Move the file (never overwrites; renames on a name clash)
                 destination = safe_move(source, destination)
@@ -195,6 +214,7 @@ class FileIndexer:
             
         except Exception as e:
             print(f"Error executing suggestion: {e}")
+            self.last_error = str(e)
             return False
     
     def should_process_file(self, file_path):
@@ -659,9 +679,13 @@ class FileIndexerGUI:
             if selection:
                 selected_suggestion = suggestion["suggestions"][selection[0]]
                 if selected_suggestion["action"] == "move":
-                    self.indexer.execute_suggestion(selected_suggestion, "move")
+                    done = self.indexer.execute_suggestion(selected_suggestion, "move")
                 else:
-                    self.indexer.execute_suggestion(selected_suggestion, "keep")
+                    done = self.indexer.execute_suggestion(selected_suggestion, "keep")
+                if not done:
+                    # Keep the file in the queue and the popup open
+                    messagebox.showwarning("Not moved", self.indexer.last_error or "Failed to organize file")
+                    return
                 
                 # Remove from queue
                 self.indexer.suggestions_queue.pop(0)
@@ -691,6 +715,11 @@ class FileIndexerGUI:
             try:
                 source_path = Path(suggestion["file_path"])
                 dest_path = Path(destination) / source_path.name
+                
+                blocker = self.indexer.move_blocker(source_path)
+                if blocker:
+                    messagebox.showwarning("Not moved", blocker)
+                    return
                 
                 # Move the file (never overwrites; renames on a name clash)
                 dest_path = safe_move(source_path, dest_path)
@@ -855,6 +884,13 @@ class FileIndexerGUI:
                 for i, suggestion, file_path in reversed(files_to_move):
                     try:
                         dest_path = Path(destination) / file_path.name
+                        
+                        # Skip files that are still being written; they stay in the queue
+                        blocker = self.indexer.move_blocker(file_path)
+                        if blocker:
+                            print(blocker)
+                            failed_count += 1
+                            continue
                         
                         # Move the file (never overwrites; renames on a name clash)
                         dest_path = safe_move(file_path, dest_path)
