@@ -42,10 +42,11 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 ## Boundaries
 
 - **Never read or edit:** `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json` (the owner's real data with personal file paths; never put their contents in commits, docs or tests). Enforced by deny rules in `.claude/settings.json`.
-- **Ask the user first:** running the app (it moves real files), publishing the package, editing the `.bat` / `.vbs` launchers. Enforced by ask rules in `.claude/settings.json`. Also ask before changing the category rules in `DEFAULT_CATEGORIES` in `categorizer.py` (no rule enforces this one).
+- **Ask the user first:** running the app (it moves real files), publishing the package, editing the `.bat` / `.vbs` launchers. Enforced by ask rules in `.claude/settings.json`. Also ask before changing the category rules in `DEFAULT_CATEGORIES` in `categorizer.py`; `tests/test_categories_pinned.py` fails until you update it, so the change can't slip through.
 - **Always blocked** by `.claude/harness/hooks/guard.sh`: recursive deletes outside build and cache folders, force-push, `git reset --hard`, `git clean -f`, deleting branches. If one is truly needed, explain why and ask the user to run it.
 
 ## Known mistakes
 
 <!-- One line per real mistake, phrased as what to do instead. Prefer turning a mistake into a check (run /retro). -->
 - To test a check that looks at `file_index.json` or `file_indexer_config.ini`, use a scratch git repo with fake files, never the real ones. The deny rules only apply when the session starts in this repo; an agent once overwrote the real index this way.
+- In a cloud session `gh pr view` fails (GitHub's GraphQL API is blocked). Use the REST API instead, for example `gh api repos/akholab/FileSorter/pulls/N`.
