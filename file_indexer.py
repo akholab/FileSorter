@@ -6,7 +6,6 @@ A Python-based file indexing and organization system for Windows.
 import os
 import platform
 import json
-import shutil
 import time
 import threading
 from pathlib import Path
@@ -17,6 +16,7 @@ import configparser
 import psutil
 from file_monitor import FileMonitor
 from categorizer import default_categories, categorize_file, suggest_organization
+from safemove import UndoLog, safe_move, trash_file, undo_move
 import win32api
 import win32gui
 import subprocess
@@ -38,8 +38,7 @@ class FileIndexer:
         self.file_monitor = FileMonitor(self)
         self.last_user_activity = time.time()
         self.user_activity_threshold = 30  # seconds of inactivity before showing popups
-        self.action_history = []  # Store actions for undo functionality
-        self.max_history = 50  # Maximum number of actions to remember
+        self.undo_log = UndoLog("file_undo_log.json")  # Last 500 actions, kept on disk
         
     def load_config(self):
         """Load configuration from file"""
@@ -110,59 +109,52 @@ class FileIndexer:
         return None
     
     def record_action(self, action_type, file_path, details=None):
-        """Record an action for undo functionality"""
-        action = {
-            "type": action_type,
-            "file_path": str(file_path),
-            "timestamp": datetime.now().isoformat(),
-            "details": details or {}
-        }
-        
-        self.action_history.append(action)
-        
-        # Keep only the last max_history actions
-        if len(self.action_history) > self.max_history:
-            self.action_history.pop(0)
+        """Record an action for undo functionality (saved to disk)"""
+        self.undo_log.record(action_type, file_path, details)
     
     def undo_last_action(self):
         """Undo the last action performed"""
-        if not self.action_history:
+        last_action = self.undo_log.peek_last()
+        if last_action is None:
             return False, "No actions to undo"
         
-        last_action = self.action_history.pop()
-        
         try:
-            if last_action["type"] == "moved":
-                # Undo move: move file back to original location
-                current_path = Path(last_action["file_path"])
-                original_path = Path(last_action["details"]["original_path"])
-                
-                if current_path.exists():
-                    shutil.move(str(current_path), str(original_path))
-                    # Remove from index
-                    if str(current_path) in self.index_data:
-                        del self.index_data[str(current_path)]
-                    return True, f"Undid move: {current_path.name} moved back to {original_path.parent}"
-                else:
-                    return False, f"File not found: {current_path}"
-            
-            elif last_action["type"] == "deleted":
-                # Undo delete: restore from recycle bin or show message
-                file_path = Path(last_action["file_path"])
-                return False, f"Cannot undo delete: {file_path.name} was permanently deleted"
-            
-            elif last_action["type"] == "kept":
-                # Undo keep: just remove from index
-                file_path = Path(last_action["file_path"])
-                if str(file_path) in self.index_data:
-                    del self.index_data[str(file_path)]
-                return True, f"Undid keep action for: {file_path.name}"
-            
-            else:
-                return False, f"Unknown action type: {last_action['type']}"
-                
+            success, message = self._undo_entry(last_action)
         except Exception as e:
+            # Keep the entry in the log so the user can try again
             return False, f"Error undoing action: {e}"
+        
+        self.undo_log.pop_last()
+        return success, message
+    
+    def _undo_entry(self, last_action):
+        """Undo one logged action and return (success, message)"""
+        if last_action["type"] == "moved":
+            # Undo move: put the file back without overwriting anything
+            current_path = Path(last_action["file_path"])
+            success, message, _ = undo_move(last_action)
+            if success:
+                # Remove from index
+                if str(current_path) in self.index_data:
+                    del self.index_data[str(current_path)]
+                    self.save_index()
+            return success, message
+        
+        elif last_action["type"] == "deleted":
+            # Deleted files go to the Recycle Bin; restoring is manual
+            file_path = Path(last_action["file_path"])
+            return False, f"Cannot undo delete here: {file_path.name} is in the Recycle Bin. Restore it from there."
+        
+        elif last_action["type"] == "kept":
+            # Undo keep: just remove from index
+            file_path = Path(last_action["file_path"])
+            if str(file_path) in self.index_data:
+                del self.index_data[str(file_path)]
+                self.save_index()
+            return True, f"Undid keep action for: {file_path.name}"
+        
+        else:
+            return False, f"Unknown action type: {last_action['type']}"
     
     def execute_suggestion(self, suggestion, action):
         """Execute a user-approved suggestion"""
@@ -171,11 +163,8 @@ class FileIndexer:
                 source = Path(suggestion["source"])
                 destination = Path(suggestion["destination"])
                 
-                # Create destination directory if it doesn't exist
-                destination.parent.mkdir(parents=True, exist_ok=True)
-                
-                # Move the file
-                shutil.move(str(source), str(destination))
+                # Move the file (never overwrites; renames on a name clash)
+                destination = safe_move(source, destination)
                 
                 # Record action for undo
                 self.record_action("moved", destination, {
@@ -703,11 +692,13 @@ class FileIndexerGUI:
                 source_path = Path(suggestion["file_path"])
                 dest_path = Path(destination) / source_path.name
                 
-                # Create destination directory if it doesn't exist
-                dest_path.parent.mkdir(parents=True, exist_ok=True)
+                # Move the file (never overwrites; renames on a name clash)
+                dest_path = safe_move(source_path, dest_path)
                 
-                # Move the file
-                shutil.move(str(source_path), str(dest_path))
+                # Record action for undo
+                self.indexer.record_action("moved", dest_path, {
+                    "original_path": str(source_path)
+                })
                 
                 # Update index
                 self.indexer.index_data[str(dest_path)] = {
@@ -721,7 +712,7 @@ class FileIndexerGUI:
                 # Remove from queue
                 self.indexer.suggestions_queue.pop(index)
                 self.update_suggestions_list()
-                messagebox.showinfo("Success", f"File moved to {destination}")
+                messagebox.showinfo("Success", f"File moved to {dest_path}")
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to move file: {e}")
@@ -783,23 +774,23 @@ class FileIndexerGUI:
         # Confirm deletion
         result = messagebox.askyesno(
             "Confirm Delete", 
-            f"Are you sure you want to permanently delete:\n{file_path.name}\n\nThis action cannot be undone!",
+            f"Move to the Recycle Bin:\n{file_path.name}\n\nYou can restore it from the Recycle Bin.",
             icon='warning'
         )
         
         if result:
             try:
-                # Record action for undo (even though we can't undo delete)
-                self.indexer.record_action("deleted", file_path)
+                # Send the file to the Recycle Bin (never deletes it for good)
+                trash_file(file_path)
                 
-                # Delete the file
-                os.remove(str(file_path))
+                # Record the action in the undo log
+                self.indexer.record_action("deleted", file_path)
                 
                 # Remove from queue
                 self.indexer.suggestions_queue.pop(index)
                 self.update_suggestions_list()
                 
-                messagebox.showinfo("Success", f"Deleted: {file_path.name}")
+                messagebox.showinfo("Success", f"Moved to the Recycle Bin: {file_path.name}")
                 
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to delete file: {e}")
@@ -865,11 +856,8 @@ class FileIndexerGUI:
                     try:
                         dest_path = Path(destination) / file_path.name
                         
-                        # Create destination directory if it doesn't exist
-                        dest_path.parent.mkdir(parents=True, exist_ok=True)
-                        
-                        # Move the file
-                        shutil.move(str(file_path), str(dest_path))
+                        # Move the file (never overwrites; renames on a name clash)
+                        dest_path = safe_move(file_path, dest_path)
                         
                         # Record action for undo
                         self.indexer.record_action("moved", dest_path, {

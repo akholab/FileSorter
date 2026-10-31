@@ -72,7 +72,9 @@
       "Read(/file_index.json)",
       "Edit(/file_index.json)",
       "Read(/file_indexer_config.ini)",
-      "Edit(/file_indexer_config.ini)"
+      "Edit(/file_indexer_config.ini)",
+      "Read(/file_undo_log.json)",
+      "Edit(/file_undo_log.json)"
     ]
   }
 }
