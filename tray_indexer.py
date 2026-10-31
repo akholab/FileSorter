@@ -158,7 +158,7 @@ class TrayFileIndexer:
                     options_window.destroy()
                     messagebox.showinfo("Success", "File organized successfully!")
                 else:
-                    messagebox.showerror("Error", "Failed to organize file")
+                    messagebox.showerror("Error", self.indexer.last_error or "Failed to organize file")
         
         def skip_file():
             self.indexer.suggestions_queue.remove(suggestion)
