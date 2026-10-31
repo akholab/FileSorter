@@ -28,7 +28,7 @@ Done means: `check` passes, the reviewer's findings are fixed or answered, and t
 
 The check script and hooks are bash. On Windows they need Git Bash (or WSL).
 
-The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/`win32gui` at the top, so importing it on Linux or macOS fails. That is why `check` uses byte-compiling and pyflakes, which never import the code.
+The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/`win32gui` at the top, so importing it on Linux or macOS fails. That is why `check` uses byte-compiling and pyflakes, which never import the code, and why pytest only imports `categorizer.py`, never `file_indexer.py`.
 
 ## Where to look
 
