@@ -20,6 +20,59 @@
           }
         ]
       }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/harness/hooks/guard.sh"
+          }
+        ]
+      }
+    ]
+  },
+  "permissions": {
+    "ask": [
+      "Bash(python launcher.py*)",
+      "Bash(python3 launcher.py*)",
+      "Bash(pythonw launcher.py*)",
+      "Bash(python file_indexer.py*)",
+      "Bash(python3 file_indexer.py*)",
+      "Bash(pythonw file_indexer.py*)",
+      "Bash(python tray_indexer.py*)",
+      "Bash(python3 tray_indexer.py*)",
+      "Bash(pythonw tray_indexer.py*)",
+      "Bash(twine upload *)",
+      "Bash(python setup.py * upload*)",
+      "Bash(python3 setup.py * upload*)",
+      "Edit(/*.bat)",
+      "Edit(/*.vbs)",
+      "Bash(py launcher.py*)",
+      "Bash(py -3 launcher.py*)",
+      "Bash(*pythonw.exe launcher.py*)",
+      "Bash(*python.exe launcher.py*)",
+      "Bash(py file_indexer.py*)",
+      "Bash(py -3 file_indexer.py*)",
+      "Bash(*pythonw.exe file_indexer.py*)",
+      "Bash(*python.exe file_indexer.py*)",
+      "Bash(py tray_indexer.py*)",
+      "Bash(py -3 tray_indexer.py*)",
+      "Bash(*pythonw.exe tray_indexer.py*)",
+      "Bash(*python.exe tray_indexer.py*)",
+      "Bash(*run.bat*)",
+      "Bash(*run_hidden.bat*)",
+      "Bash(*run_simple.bat*)",
+      "Bash(*run_simple_hidden.bat*)",
+      "Bash(*start_hidden.bat*)",
+      "Bash(*FileManager.vbs*)"
+    ],
+    "deny": [
+      "Read(/file_index.json)",
+      "Edit(/file_index.json)",
+      "Read(/file_indexer_config.ini)",
+      "Edit(/file_indexer_config.ini)"
     ]
   }
 }

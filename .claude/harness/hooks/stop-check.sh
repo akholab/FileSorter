@@ -38,7 +38,7 @@ blocks=$((blocks + 1))
 printf '%s\n' "$blocks" > "$blocks_file"
 
 if [ "$blocks" -gt "$MAX_BLOCKS" ]; then
-  printf '{"systemMessage":"Harness: check.sh is still failing after %s fix attempts. Claude was asked to tell you why."}\n' "$MAX_BLOCKS"
+  printf '{"systemMessage":"Harness: check.sh is still failing after %s fix attempts. Claude was asked to tell you why. Consider running /retro to fix the harness."}\n' "$MAX_BLOCKS"
   exit 0
 fi
 
