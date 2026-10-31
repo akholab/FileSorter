@@ -13,7 +13,7 @@ session=$(safe_id "$(json_field "$input" session_id)")
 
 # Nothing to enforce yet: no check script, or setup still running.
 [ -x "$CHECK" ] || exit 0
-[ -f "$HARNESS_DIR/SETUP.md" ] && exit 0
+setup_pending && exit 0
 
 mkdir -p "$HARNESS_STATE"
 fp=$(tree_fingerprint)
@@ -38,7 +38,7 @@ blocks=$((blocks + 1))
 printf '%s\n' "$blocks" > "$blocks_file"
 
 if [ "$blocks" -gt "$MAX_BLOCKS" ]; then
-  printf '{"systemMessage":"Harness: check.sh is still failing after %s fix attempts. Claude was told to explain why."}\n' "$MAX_BLOCKS"
+  printf '{"systemMessage":"Harness: check.sh is still failing after %s fix attempts. Claude was asked to tell you why."}\n' "$MAX_BLOCKS"
   exit 0
 fi
 

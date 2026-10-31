@@ -10,7 +10,7 @@ session=$(safe_id "$(json_field "$input" session_id)")
 mkdir -p "$HARNESS_STATE"
 tree_fingerprint > "$HARNESS_STATE/start-$session"
 
-if [ -f "$HARNESS_DIR/SETUP.md" ]; then
+if setup_pending; then
   echo "Harness setup is pending in this project (.claude/harness/SETUP.md)."
   exit 0
 fi

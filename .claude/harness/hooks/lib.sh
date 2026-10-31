@@ -5,6 +5,12 @@ HARNESS_ROOT="${CLAUDE_PROJECT_DIR:-$(pwd)}"
 HARNESS_DIR="$HARNESS_ROOT/.claude/harness"
 HARNESS_STATE="$HARNESS_DIR/.state"
 
+# True while setup hasn't finished. HARNESS_IGNORE_SETUP=1 lets setup test the
+# hooks for real before it deletes SETUP.md.
+setup_pending() {
+  [ -f "$HARNESS_DIR/SETUP.md" ] && [ -z "${HARNESS_IGNORE_SETUP:-}" ]
+}
+
 # Pull a string field out of the hook's JSON input without needing jq.
 json_field() {
   printf '%s' "$1" | sed -n "s/.*\"$2\"[[:space:]]*:[[:space:]]*\"\([^\"]*\)\".*/\1/p" | head -n 1
