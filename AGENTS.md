@@ -12,7 +12,7 @@ Smart File Indexer: a personal Python desktop app (Tkinter GUI plus a system-tra
 4. Run `.claude/harness/check.sh`. A Stop hook runs it too and sends you back if it fails.
 5. On a change to code, config or the harness, ask the `reviewer` subagent to review the branch. Fix the findings you agree are real, re-run `check`, and list the ones you skip with a reason. One review per task.
 
-If `reviewer` or `/retro` isn't available by name (for example in a cloud session that didn't start in this repo), start a general agent and give it `.claude/agents/reviewer.md` or `.claude/skills/retro/SKILL.md` as its instructions.
+If `reviewer` or `/retro` isn't available by name (for example in a cloud session that didn't start in this repo), start a general agent and give it `.claude/agents/reviewer.md` or `.claude/skills/retro/SKILL.md` as its instructions. The reviewer's read-only hook doesn't apply to a general agent, so tell it to change nothing.
 
 Done means: `check` passes, the reviewer's findings are fixed or answered, and the change is described in `progress.md`.
 

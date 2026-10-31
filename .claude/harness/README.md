@@ -7,7 +7,8 @@ This folder keeps coding agents honest in this project. It came from [MyClaudeSe
 | `check.sh` | One command that says whether the project is healthy. Exit 0 means pass. |
 | `progress.md` | Goal, open tasks, and a session log, so each new session picks up where the last one stopped. |
 | `hooks/guard.sh` | Runs before every shell command: blocks recursive deletes (except build and cache folders), force-push, `git reset --hard`, `git clean -f` and branch deletes, even when wrapped in `sudo`, `bash -c` or `git -C`. |
-| `hooks/session-start.sh` | Runs when a Claude Code session starts: shows Claude the progress file. |
+| `hooks/reviewer-bash.sh` | Runs only inside the `reviewer` subagent (from its frontmatter, and from `guard.sh`): allows read-only git commands and blocks everything else, so the reviewer can't change files. |
+| `hooks/session-start.sh` | Runs when a Claude Code session starts: shows Claude the progress file, and asks you to trust the folder if Claude Code hasn't yet (it skips agent hooks until you do). |
 | `hooks/stop-check.sh` | Runs when Claude tries to finish: runs `check.sh` and sends Claude back if it fails, up to 3 times per session. Skips when nothing changed. |
 | `.state/` | Scratch files for the hooks. Git-ignored. |
 

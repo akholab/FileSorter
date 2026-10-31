@@ -16,6 +16,16 @@ else
 fi
 [ -n "$cmd" ] || exit 0
 
+# Inside the reviewer subagent, only read-only commands are allowed. Checked
+# here as well as in reviewer.md's own hook, because Claude Code skips agent
+# frontmatter hooks in folders the user hasn't trusted yet.
+agent=$(printf '%s' "$input" | sed -n 's/.*"agent_type"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' | head -n 1)
+if [ "$agent" = reviewer ]; then
+  # Run through bash and turn any failure into a block, so a missing
+  # executable bit fails closed.
+  printf '%s' "$input" | bash "$(dirname "$0")/reviewer-bash.sh" || exit 2
+fi
+
 block() {
   echo "Blocked by the harness guard: $1." >&2
   echo "Use a safer command. If this really is needed, explain why and ask the user to run it themselves." >&2
