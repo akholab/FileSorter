@@ -25,8 +25,13 @@ syntax() { py_files | xargs python3 -m py_compile; }
 # allowed for now; anything else (undefined names, bad syntax) fails.
 lint() {
   if ! python3 -m pyflakes --version >/dev/null 2>&1; then
-    echo "pyflakes is not installed: run pip install -r requirements-dev.txt"
-    return 1
+    # Fresh machines (new cloud sessions) won't have it yet.
+    python3 -m pip install -q -r requirements-dev.txt >/dev/null 2>&1 ||
+      python3 -m pip install -q --user -r requirements-dev.txt >/dev/null 2>&1
+    if ! python3 -m pyflakes --version >/dev/null 2>&1; then
+      echo "pyflakes is not installed and pip couldn't install it: run pip install -r requirements-dev.txt"
+      return 1
+    fi
   fi
   local out
   out=$(py_files | xargs python3 -m pyflakes 2>&1 | grep -vE "imported but unused|assigned to but never used")

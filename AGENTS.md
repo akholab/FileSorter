@@ -13,10 +13,12 @@ Smart File Indexer: a personal Python desktop app (Tkinter GUI plus a system-tra
 | Install | `pip install -r requirements.txt` (app), `pip install -r requirements-dev.txt` (check tools) |
 | Run | `python launcher.py` (or `python file_indexer.py` for the GUI, `python tray_indexer.py` for tray mode) |
 | Test | None yet |
-| Lint | `python3 -m pyflakes *.py` |
+| Lint | pyflakes, run by `check` (it ignores unused imports and variables, so don't chase those) |
 | **Check everything** | `.claude/harness/check.sh` |
 
 Run `.claude/harness/check.sh` before you say a task is done. A Stop hook runs it too and sends you back if it fails.
+
+The check script and hooks are bash. On Windows they need Git Bash (or WSL).
 
 The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/`win32gui` at the top, so importing it on Linux or macOS fails. That is why `check` uses byte-compiling and pyflakes, which never import the code.
 
