@@ -76,3 +76,5 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 <!-- One line per real mistake, phrased as what to do instead. Prefer turning a mistake into a check (run /retro). -->
 - To test a check that looks at `file_index.json` or `file_indexer_config.ini`, use a scratch git repo with fake files, never the real ones. The deny rules only apply when the session starts in this repo; an agent once overwrote the real index this way.
 - In a cloud session `gh pr view` fails (GitHub's GraphQL API is blocked). Use the REST API instead, for example `gh api repos/akholab/FileSorter/pulls/N`.
+- Before merging, read the PR's head SHA from `gh api repos/akholab/FileSorter/pulls/N` (`.head.sha`); never type one from memory. A guessed SHA made a merge fail.
+- Read a file's metadata (download mark, other NTFS streams) before moving it: a move to another drive is a copy, and copies drop it (see `research.md`).

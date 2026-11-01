@@ -72,9 +72,10 @@ def matching_rule(hosts, domain_rules):
 def learn_domain(hosts):
     """The one domain used to group learned choices: the page the file was
     downloaded from (ReferrerUrl, last in `hosts`) if known, since HostUrl is
-    often a CDN.
-    shortcut: drops only a leading "www.", so shop.example.com and example.com
-    learn separately; use the Public Suffix List if that turns out to matter."""
+    often a CDN."""
+    # shortcut: drops only a leading "www.", so shop.example.com and example.com
+    # learn separately; switch to the Public Suffix List when one site's files
+    # keep needing the same choice twice because they come from two subdomains.
     if not hosts:
         return None
     host = hosts[-1]
