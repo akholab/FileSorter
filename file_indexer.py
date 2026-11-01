@@ -15,7 +15,8 @@ from tkinter import ttk, messagebox, filedialog
 import configparser
 import psutil
 from file_monitor import FileMonitor
-from categorizer import categorize_file, describe_top, suggest_organization
+from categorizer import apply_domain_rule, categorize_file, describe_top, suggest_organization
+import download_source
 from safemove import UndoLog, safe_move, trash_file, undo_move
 from filewatch import get_settle_seconds, is_partial_name, is_still_changing
 from learning import KEEP, Learner, get_threshold
@@ -34,9 +35,10 @@ class FileIndexer:
         self.index_file = "file_index.json"
         self.load_index()
         
-        # Categories come from rules.toml; on a mistake, the built-in ones are used
-        # and rules_error says why (the GUI shows it at startup).
-        self.categories, self.rules_error = rules.load()
+        # Categories and domain rules come from rules.toml; on a mistake, the
+        # built-in categories (and no domain rules) are used and rules_error
+        # says why (the GUI shows it at startup).
+        self.categories, self.domain_rules, self.rules_error = rules.load()
         if self.rules_error:
             print(self.rules_warning())
         
@@ -99,10 +101,15 @@ class FileIndexer:
         return categorize_file(file_path, self.categories)
     
     def suggest_organization(self, file_path):
-        """Generate organization suggestions for a file, with the folder you
-        usually pick for this kind of file first"""
+        """Generate organization suggestions for a file. Order: your domain
+        rule for the site it was downloaded from, then the folder you usually
+        pick for this kind of file, then the category folders."""
+        hosts = download_source.read_hosts(file_path)
         suggestions = suggest_organization(file_path, self.categories)
-        return self.learner.apply(file_path, suggestions, self.file_monitor.get_monitored_directories())
+        suggestions = self.learner.apply(file_path, suggestions, self.file_monitor.get_monitored_directories(),
+                                         download_source.learn_domain(hosts))
+        rule = download_source.matching_rule(hosts, self.domain_rules)
+        return apply_domain_rule(file_path, suggestions, rule) if rule else suggestions
     
     def learn_from_move(self, source, destination, seen=None):
         """Count a move (or, with destination=None, a Keep) as a vote.
@@ -114,12 +121,15 @@ class FileIndexer:
             if destination is not None and os.path.normcase(str(Path(destination).parent)) == os.path.normcase(str(Path(source).parent)):
                 return {}  # the file did not go anywhere: nothing to learn
             roots = self.file_monitor.get_monitored_directories()
-            key = Learner.key_for(source, roots)
+            # The download mark moves with the file, so read it where the file is now
+            domain = download_source.learn_domain(download_source.read_hosts(destination or source))
+            key = Learner.key_for(source, roots, domain)
             if seen is not None:
                 if key in seen:
                     return {}
                 seen.add(key)
-            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent, roots)
+            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent,
+                                          roots, domain)
             return {"learn_key": key, "learn_dest": dest}
         except Exception as e:
             # Learning is best effort: it must never make a finished move look failed
@@ -770,7 +780,9 @@ class FileIndexerGUI:
                 display_text = f"Move to: {Path(suggestion_option['destination']).parent}"
             else:
                 display_text = "Keep in current location"
-            if suggestion_option.get("learned_count"):
+            if suggestion_option.get("rule_domain"):
+                display_text += f"  (your rule: {suggestion_option['rule_domain']})"
+            elif suggestion_option.get("learned_count"):
                 display_text += f"  (your usual, {suggestion_option['learned_count']} times)"
             suggestions_listbox.insert(tk.END, display_text)
         

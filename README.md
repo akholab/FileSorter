@@ -94,6 +94,7 @@ FileManager/
 ├── tray_indexer.py          # System tray application
 ├── file_monitor.py          # File monitoring module
 ├── rules.py                 # Reads and writes rules.toml
+├── download_source.py       # Which website a download came from
 ├── requirements.txt         # Python dependencies
 ├── setup.py                 # Package setup script
 ├── LICENSE                  # MIT License
@@ -134,9 +135,21 @@ folders = ["Taxes"]               # where to suggest moving the file
 
 If the file has a mistake, the app shows which line and uses the built-in categories until you fix it. Delete the file to get the defaults back.
 
+### Rules by website (Windows)
+
+Windows browsers mark each download with the site it came from. Add a `[[domain_rules]]` block to `rules.toml` to send everything from one site to one folder:
+
+```toml
+[[domain_rules]]
+domain = "mybank.com"        # also matches files.mybank.com and other subdomains
+folder = "D:/Finance/Bank"   # a full path, or a folder next to the file
+```
+
+A domain rule wins over your usual folder, which wins over the category. The app keeps only the site name, never the full download link. Files without the mark (copied from a USB stick, or from a FAT32 drive) are sorted as usual. The app also learns your usual folder per site, so statements from your bank and PDFs from elsewhere can go to different places.
+
 ### Preview Sorting
 
-The **Preview Sorting** button lists every file in a folder with where it would go and why ("category: documents" or "your usual"). It never moves anything.
+The **Preview Sorting** button lists every file in a folder with where it would go and why ("your rule: mybank.com", "your usual" or "category: documents"). It never moves anything.
 
 ### Modifying Organization Rules
 

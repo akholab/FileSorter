@@ -2,7 +2,10 @@
 
 Every move you approve (or make by hand) is a vote for the destination folder,
 and every "Keep" is a vote for leaving the file where it is. Votes are grouped
-by *extension + watched folder* (".pdf in Downloads"). Once the same choice has
+by *extension + watched folder* (".pdf in Downloads"), plus the website for
+downloaded files (".pdf in Downloads from mybank.com"). A downloaded file
+uses its website's votes first and falls back to the plain group's votes,
+so choices learned before websites were tracked keep working. Once the same choice has
 been made `threshold` times (default 2) and it is the most-voted choice for
 that group, it goes to the top of the suggestions. A "Skip" teaches nothing.
 
@@ -46,9 +49,10 @@ class Learner:
     # --- grouping -----------------------------------------------------------
 
     @staticmethod
-    def key_for(file_path, roots=()):
+    def key_for(file_path, roots=(), domain=None):
         """The group a file belongs to: its extension plus the watched folder
-        that contains it (or its own folder if it is not under a watched one)."""
+        that contains it (or its own folder if it is not under a watched one),
+        plus the website it was downloaded from when known."""
         file_path = Path(file_path)
         folder = file_path.parent
         best = None
@@ -60,7 +64,8 @@ class Learner:
                     best = (root_n, root)
         if best is not None:
             folder = best[1]
-        return f"{file_path.suffix.lower()}|{_norm(folder)}"
+        key = f"{file_path.suffix.lower()}|{_norm(folder)}"
+        return f"{key}|{domain}" if domain else key
 
     # --- storage ------------------------------------------------------------
 
@@ -102,10 +107,10 @@ class Learner:
 
     # --- voting -------------------------------------------------------------
 
-    def vote(self, file_path, destination_folder, roots=()):
+    def vote(self, file_path, destination_folder, roots=(), domain=None):
         """Count one vote. `destination_folder` is a folder path, or KEEP.
         Returns (key, destination) so the vote can be retracted on undo."""
-        key = self.key_for(file_path, roots)
+        key = self.key_for(file_path, roots, domain)
         if destination_folder == KEEP:
             dest, path = KEEP, KEEP
         else:
@@ -139,24 +144,27 @@ class Learner:
 
     # --- using the votes ----------------------------------------------------
 
-    def usual(self, file_path, roots=()):
+    def usual(self, file_path, roots=(), domain=None):
         """Return (destination or KEEP, vote count) if one choice has earned
         the top spot, else None. The choice must have at least `threshold`
-        votes and be the most-voted one; on a tie the most recent wins."""
-        key = self.key_for(file_path, roots)
+        votes and be the most-voted one; on a tie the most recent wins.
+        With a `domain`, that website's group is tried before the plain one."""
+        keys = [self.key_for(file_path, roots, domain)] if domain else []
+        keys.append(self.key_for(file_path, roots))
         with self._lock:
-            dests = self.votes.get(key)
-            if not dests:
-                return None
-            dest, info = max(dests.items(), key=lambda kv: (kv[1]["count"], kv[1]["last"]))
-            if info["count"] < self.threshold:
-                return None
-            return (KEEP if dest == KEEP else info["path"]), info["count"]
+            for key in keys:
+                dests = self.votes.get(key)
+                if not dests:
+                    continue
+                dest, info = max(dests.items(), key=lambda kv: (kv[1]["count"], kv[1]["last"]))
+                if info["count"] >= self.threshold:
+                    return (KEEP if dest == KEEP else info["path"]), info["count"]
+            return None
 
-    def apply(self, file_path, suggestions, roots=()):
+    def apply(self, file_path, suggestions, roots=(), domain=None):
         """Return `suggestions` with the learned choice moved (or added) at the
         top, tagged with `learned_count`. Unchanged if nothing has been learned."""
-        usual = self.usual(file_path, roots)
+        usual = self.usual(file_path, roots, domain)
         if usual is None:
             return suggestions
         dest, count = usual

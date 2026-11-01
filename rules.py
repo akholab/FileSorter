@@ -30,6 +30,16 @@ HEADER = """\
 #   keywords    words in the file name (checked when no extension matched)
 #   folders     where to suggest moving the file, as folders next to it
 #
+# Each [[domain_rules]] block sends files downloaded from a website to one
+# folder, and wins over everything else. It matches the site and its
+# subdomains, using the download mark Windows browsers save with each file:
+#   domain  the site, like "mybank.com" (no https:// and no path)
+#   folder  a full path like "D:/Finance/Bank", or a folder next to the file
+#
+# [[domain_rules]]
+# domain = "mybank.com"
+# folder = "D:/Finance/Bank"
+#
 # If this file has a mistake, the app tells you the line and uses its
 # built-in categories until you fix it. Delete the file to get the defaults back.
 """
@@ -57,16 +67,17 @@ def default_text():
 
 
 def parse(text):
-    """Turn rules.toml text into a categories dict. Raises ValueError with a
-    readable message when the text isn't valid."""
+    """Turn rules.toml text into (categories dict, domain rules list). Raises
+    ValueError with a readable message when the text isn't valid."""
     try:
         data = tomllib.loads(text)
     except tomllib.TOMLDecodeError as e:
         raise ValueError(f"not valid TOML: {e}") from e
 
-    unknown = sorted(set(data) - {"categories"})
+    unknown = sorted(set(data) - {"categories", "domain_rules"})
     if unknown:
-        raise ValueError(f"unknown setting '{unknown[0]}' (only [categories.<name>] blocks are allowed)")
+        raise ValueError(f"unknown setting '{unknown[0]}' "
+                         "(only [categories.<name>] and [[domain_rules]] blocks are allowed)")
     raw = data.get("categories")
     if not isinstance(raw, dict) or not raw:
         raise ValueError("no [categories.<name>] blocks found")
@@ -94,21 +105,47 @@ def parse(text):
         if not clean["folders"]:
             raise ValueError(f"category '{name}' needs at least one folder")
         categories[name] = clean
-    return categories
+    return categories, _parse_domain_rules(data.get("domain_rules", []))
+
+
+def _parse_domain_rules(raw):
+    if not isinstance(raw, list):
+        raise ValueError("domain_rules must be [[domain_rules]] blocks")
+    result = []
+    for n, rule in enumerate(raw, 1):
+        where = f"domain rule {n}"
+        if not isinstance(rule, dict):
+            raise ValueError(f"{where} must be a [[domain_rules]] block")
+        unknown = sorted(set(rule) - {"domain", "folder"})
+        if unknown:
+            raise ValueError(f"{where}: unknown setting '{unknown[0]}' (allowed: domain, folder)")
+        domain, folder = rule.get("domain"), rule.get("folder")
+        if not isinstance(domain, str) or not isinstance(folder, str) or not folder.strip():
+            raise ValueError(f"{where} needs a domain and a folder, both as text")
+        domain = domain.strip().lower().rstrip(".")
+        if domain.startswith("*."):
+            domain = domain[2:]
+        if domain.startswith("www."):
+            domain = domain[4:]
+        if not domain or any(c in domain for c in "/: \t"):
+            raise ValueError(f"{where}: write just the site, like \"mybank.com\" (got {rule['domain']!r})")
+        result.append({"domain": domain, "folder": folder.strip()})
+    return result
 
 
 def load(path=RULES_FILE):
-    """Return (categories, error). Writes the default file when it's missing.
-    `error` is None when the file was used, else why the defaults were used."""
+    """Return (categories, domain rules, error). Writes the default file when
+    it's missing. `error` is None when the file was used, else why the
+    defaults (and no domain rules) were used."""
     if not os.path.exists(path):
         try:
             with open(path, "w", encoding="utf-8") as f:
                 f.write(default_text())
         except OSError as e:
-            return default_categories(), f"could not create {path}: {e}"
-        return default_categories(), None
+            return default_categories(), [], f"could not create {path}: {e}"
+        return default_categories(), [], None
     try:
         with open(path, "r", encoding="utf-8") as f:
-            return parse(f.read()), None
+            return (*parse(f.read()), None)
     except (OSError, UnicodeDecodeError, ValueError) as e:
-        return default_categories(), f"{path}: {e}"
+        return default_categories(), [], f"{path}: {e}"

@@ -247,3 +247,33 @@ def test_folders_that_differ_only_in_case_count_as_one_choice(tmp_path, root, mo
     path, count = L.usual(root / "c.pdf", [root])
     assert count == 2
     assert path == str(tmp_path / "DOCS")  # shown the way you last wrote it
+
+
+# --- websites ---------------------------------------------------------------
+
+def test_a_website_makes_its_own_group(root):
+    plain = Learner.key_for(root / "a.pdf", [root])
+    assert Learner.key_for(root / "a.pdf", [root], "mybank.com") == plain + "|mybank.com"
+    assert Learner.key_for(root / "a.pdf", [root], None) == plain
+
+
+def test_website_votes_come_first(tmp_path, root):
+    lr = make_learner(tmp_path)
+    bank, docs = tmp_path / "Bank", tmp_path / "Docs"
+    for _ in range(2):
+        lr.vote(root / "x.pdf", bank, [root], "mybank.com")
+        lr.vote(root / "x.pdf", docs, [root])
+    assert lr.usual(root / "s.pdf", [root], "mybank.com") == (str(bank), 2)
+    assert lr.usual(root / "s.pdf", [root]) == (str(docs), 2)
+    assert lr.usual(root / "s.pdf", [root], "other.com") == (str(docs), 2)
+
+
+def test_old_votes_still_work_for_downloaded_files(tmp_path, root):
+    lr = make_learner(tmp_path)
+    docs = tmp_path / "Docs"
+    docs.mkdir()
+    for _ in range(2):
+        lr.vote(root / "x.pdf", docs, [root])  # learned before websites were tracked
+    lr.vote(root / "x.pdf", tmp_path / "Bank", [root], "mybank.com")  # one vote is not enough yet
+    top = lr.apply(root / "s.pdf", [{"action": "keep"}], [root], "mybank.com")[0]
+    assert Path(top["destination"]).parent == docs
