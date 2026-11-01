@@ -15,7 +15,8 @@ from tkinter import ttk, messagebox, filedialog
 import configparser
 import psutil
 from file_monitor import FileMonitor
-from categorizer import categorize_file, describe_top, suggest_organization
+from categorizer import apply_domain_rule, categorize_file, describe_top, suggest_organization
+import download_source
 from safemove import UndoLog, safe_move, trash_file, undo_move
 from filewatch import get_settle_seconds, is_partial_name, is_still_changing
 from learning import KEEP, Learner, get_threshold
@@ -34,9 +35,10 @@ class FileIndexer:
         self.index_file = "file_index.json"
         self.load_index()
         
-        # Categories come from rules.toml; on a mistake, the built-in ones are used
-        # and rules_error says why (the GUI shows it at startup).
-        self.categories, self.rules_error = rules.load()
+        # Categories and domain rules come from rules.toml; on a mistake, the
+        # built-in categories (and no domain rules) are used and rules_error
+        # says why (the GUI shows it at startup).
+        self.categories, self.domain_rules, self.rules_error = rules.load()
         if self.rules_error:
             print(self.rules_warning())
         
@@ -99,13 +101,25 @@ class FileIndexer:
         return categorize_file(file_path, self.categories)
     
     def suggest_organization(self, file_path):
-        """Generate organization suggestions for a file, with the folder you
-        usually pick for this kind of file first"""
+        """Generate organization suggestions for a file. Order: your domain
+        rule for the site it was downloaded from, then the folder you usually
+        pick for this kind of file, then the category folders."""
+        hosts = download_source.read_hosts(file_path)
         suggestions = suggest_organization(file_path, self.categories)
-        return self.learner.apply(file_path, suggestions, self.file_monitor.get_monitored_directories())
+        suggestions = self.learner.apply(file_path, suggestions, self.file_monitor.get_monitored_directories(),
+                                         download_source.learn_domain(hosts))
+        rule = download_source.matching_rule(hosts, self.domain_rules)
+        return apply_domain_rule(file_path, suggestions, rule) if rule else suggestions
     
-    def learn_from_move(self, source, destination, seen=None):
+    def download_domain(self, file_path):
+        """The website `file_path` was downloaded from, for learning, or None.
+        Read it before a move: the mark is lost on FAT32/exFAT drives, and
+        Python before 3.12 drops it when moving to another drive."""
+        return download_source.learn_domain(download_source.read_hosts(file_path))
+
+    def learn_from_move(self, source, destination, seen=None, domain=None):
         """Count a move (or, with destination=None, a Keep) as a vote.
+        For a move, pass the `domain` read from the source before moving.
 
         Returns the details to store with the undo entry so Undo can take the
         vote back. Pass a set as `seen` so a bulk move counts once per group.
@@ -114,12 +128,15 @@ class FileIndexer:
             if destination is not None and os.path.normcase(str(Path(destination).parent)) == os.path.normcase(str(Path(source).parent)):
                 return {}  # the file did not go anywhere: nothing to learn
             roots = self.file_monitor.get_monitored_directories()
-            key = Learner.key_for(source, roots)
+            if destination is None:
+                domain = self.download_domain(source)  # a Keep: the file is still there
+            key = Learner.key_for(source, roots, domain)
             if seen is not None:
                 if key in seen:
                     return {}
                 seen.add(key)
-            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent, roots)
+            key, dest = self.learner.vote(source, KEEP if destination is None else Path(destination).parent,
+                                          roots, domain)
             return {"learn_key": key, "learn_dest": dest}
         except Exception as e:
             # Learning is best effort: it must never make a finished move look failed
@@ -226,11 +243,12 @@ class FileIndexer:
                     return False
                 
                 # Move the file (never overwrites; renames on a name clash)
+                domain = self.download_domain(source)
                 destination = safe_move(source, destination)
                 
                 # Record action for undo (and count it as a vote)
                 details = {"original_path": str(source)}
-                details.update(self.learn_from_move(source, destination))
+                details.update(self.learn_from_move(source, destination, domain=domain))
                 self.record_action("moved", destination, details)
                 
                 # Update index
@@ -770,7 +788,9 @@ class FileIndexerGUI:
                 display_text = f"Move to: {Path(suggestion_option['destination']).parent}"
             else:
                 display_text = "Keep in current location"
-            if suggestion_option.get("learned_count"):
+            if suggestion_option.get("rule_domain"):
+                display_text += f"  (your rule: {suggestion_option['rule_domain']})"
+            elif suggestion_option.get("learned_count"):
                 display_text += f"  (your usual, {suggestion_option['learned_count']} times)"
             suggestions_listbox.insert(tk.END, display_text)
         
@@ -826,11 +846,12 @@ class FileIndexerGUI:
                     return
                 
                 # Move the file (never overwrites; renames on a name clash)
+                domain = self.indexer.download_domain(source_path)
                 dest_path = safe_move(source_path, dest_path)
                 
                 # Record action for undo (and count it as a vote)
                 details = {"original_path": str(source_path)}
-                details.update(self.indexer.learn_from_move(source_path, dest_path))
+                details.update(self.indexer.learn_from_move(source_path, dest_path, domain=domain))
                 self.indexer.record_action("moved", dest_path, details)
                 
                 # Update index
@@ -1000,11 +1021,12 @@ class FileIndexerGUI:
                             continue
                         
                         # Move the file (never overwrites; renames on a name clash)
+                        domain = self.indexer.download_domain(file_path)
                         dest_path = safe_move(file_path, dest_path)
                         
                         # Record action for undo (a bulk move is one vote per kind of file)
                         details = {"original_path": str(file_path)}
-                        details.update(self.indexer.learn_from_move(file_path, dest_path, learned_groups))
+                        details.update(self.indexer.learn_from_move(file_path, dest_path, learned_groups, domain))
                         self.indexer.record_action("moved", dest_path, details)
                         
                         # Update index

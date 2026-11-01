@@ -236,3 +236,53 @@ def test_rules_warning_reads_as_a_sentence(tmp_path, monkeypatch):
     msg = file_indexer.FileIndexer().rules_warning()
     assert msg.startswith("Rules not loaded, so the built-in categories are used.")
     assert "rules.toml" in msg
+
+
+def test_domain_rule_wins_over_learned_and_category(tmp_path, monkeypatch):
+    work = tmp_path / "w5"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    bank = tmp_path / "Bank"
+    (work / "rules.toml").write_text(
+        '[categories.docs]\nextensions = [".pdf"]\nfolders = ["Docs"]\n'
+        f'[[domain_rules]]\ndomain = "mybank.com"\nfolder = "{bank.as_posix()}"\n',
+        encoding="utf-8")
+    indexer = file_indexer.FileIndexer()
+    assert indexer.rules_error is None
+    watched = tmp_path / "Downloads"
+    watched.mkdir()
+    indexer.file_monitor.monitored_paths.add(str(watched))
+    taxes = tmp_path / "Taxes"
+    taxes.mkdir()
+    for name in ("1.pdf", "2.pdf"):
+        move_to(indexer, make(watched, name), taxes)  # learned: pdfs go to Taxes
+    make(watched, "statement.pdf")
+    make(watched, "other.pdf")
+    hosts = {"statement.pdf": ["files.mybank.com", "www.mybank.com"]}
+    monkeypatch.setattr(file_indexer.download_source, "read_hosts", lambda p: hosts.get(Path(p).name, []))
+    rows = {Path(f).name: (Path(folder), reason) for f, folder, reason in indexer.preview_folder(str(watched))}
+    assert rows["statement.pdf"] == (bank, "your rule: mybank.com")
+    assert rows["other.pdf"] == (taxes, "your usual")
+
+
+def test_moves_of_downloads_are_learned_per_website(ix, tmp_path, monkeypatch):
+    bank = tmp_path / "Bank"
+    bank.mkdir()
+    # Only files still in Downloads carry the mark, like a move that loses it
+    monkeypatch.setattr(file_indexer.download_source, "read_hosts",
+                        lambda p: ["www.mybank.com"] if Path(p).parent == ix.watched else [])
+    for name in ("1.pdf", "2.pdf"):
+        move_to(ix, make(ix.watched, name), bank)
+    assert all(k.endswith("|mybank.com") for k in ix.learner.votes)
+    assert Path(first_move(ix, make(ix.watched, "3.pdf"))["destination"]).parent == bank
+    monkeypatch.setattr(file_indexer.download_source, "read_hosts", lambda p: [])
+    assert Path(first_move(ix, ix.watched / "3.pdf")["destination"]).parent != bank
+    ok, _ = ix.undo_last_action()  # undo takes the website vote back
+    assert ok and sum(e["count"] for d in ix.learner.votes.values() for e in d.values()) == 1
+
+
+def test_keep_of_a_download_is_learned_for_its_website(ix, monkeypatch):
+    monkeypatch.setattr(file_indexer.download_source, "read_hosts", lambda p: ["www.mybank.com"])
+    f = make(ix.watched, "a.pdf")
+    assert ix.execute_suggestion({"action": "keep", "source": str(f)}, "keep")
+    assert [k.rsplit("|", 1)[1] for k in ix.learner.votes] == ["mybank.com"]

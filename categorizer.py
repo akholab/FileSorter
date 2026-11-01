@@ -5,6 +5,7 @@ runs on any OS and is covered by tests/test_categorizer.py.
 """
 
 import copy
+import os
 from pathlib import Path
 
 DEFAULT_CATEGORIES = {
@@ -103,13 +104,40 @@ def suggest_organization(file_path, categories):
         }]
 
 
+def apply_domain_rule(file_path, suggestions, rule):
+    """Return `suggestions` with a move to the rule's folder at the top,
+    tagged with `rule_domain`. A relative folder is next to the file, like a
+    category folder. A file already in that folder gets "keep" at the top."""
+    file_path = Path(file_path)
+    folder = file_path.parent / rule["folder"]
+    if os.path.normcase(str(folder)) == os.path.normcase(str(file_path.parent)):
+        rest = [s for s in suggestions if s["action"] != "keep"]
+        return [{"action": "keep", "source": str(file_path), "rule_domain": rule["domain"],
+                 "reason": f"Already in the folder for {rule['domain']}"}] + rest
+    wanted = os.path.normcase(str(folder))
+    rest = [s for s in suggestions
+            if not (s["action"] == "move" and os.path.normcase(str(Path(s["destination"]).parent)) == wanted)]
+    top = {
+        "action": "move",
+        "source": str(file_path),
+        "destination": str(folder / file_path.name),
+        "reason": f"Your rule for files from {rule['domain']}",
+        "rule_domain": rule["domain"],
+    }
+    return [top] + rest
+
+
 def describe_top(suggestions, category):
     """Return (destination folder or None, reason) for the first suggestion,
     in words for the Preview list."""
     top = suggestions[0] if suggestions else {"action": "keep"}
     if top["action"] != "move":
+        if top.get("rule_domain"):
+            return None, f"your rule: {top['rule_domain']}"
         return None, "your usual: keep it here" if top.get("learned_count") else "no category matched"
     folder = str(Path(top["destination"]).parent)
+    if top.get("rule_domain"):
+        return folder, f"your rule: {top['rule_domain']}"
     if top.get("learned_count"):
         return folder, "your usual"
     return folder, f"category: {category}"

@@ -57,7 +57,7 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 
 ## Where to look
 
-- All Python modules are at the repo root (no package folder): `launcher.py` (entry point), `categorizer.py` (pure sorting logic and the default categories) `safemove.py` (no-overwrite moves, the on-disk undo log, Trash) `filewatch.py` (is a file still being written?) `learning.py` (remembers where you usually put each kind of file) and `rules.py` (reads and writes `rules.toml`); none has Windows imports and all are tested in `tests/`, `file_indexer.py` (indexer and GUI), `tray_indexer.py`, `file_monitor.py` (watchdog wrapper).
+- All Python modules are at the repo root (no package folder): `launcher.py` (entry point), `categorizer.py` (pure sorting logic and the default categories) `safemove.py` (no-overwrite moves, the on-disk undo log, Trash) `filewatch.py` (is a file still being written?) `learning.py` (remembers where you usually put each kind of file, per website for downloads), `rules.py` (reads and writes `rules.toml`) and `download_source.py` (the website a download came from, read from its Windows Zone.Identifier mark); none has Windows imports and all are tested in `tests/`, `file_indexer.py` (indexer and GUI), `tray_indexer.py`, `file_monitor.py` (watchdog wrapper).
 - `*.bat`, `FileManager.vbs`: Windows-only launchers and installers.
 - `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json`, `rules.toml`: created at runtime in the working directory. Git-ignored. `rules.py` reads and writes `rules.toml` (the owner's categories; the built-in `DEFAULT_CATEGORIES` are only the starting point and the fallback).
 - `README.md`: features, launch options, how to add categories.
@@ -76,3 +76,5 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 <!-- One line per real mistake, phrased as what to do instead. Prefer turning a mistake into a check (run /retro). -->
 - To test a check that looks at `file_index.json` or `file_indexer_config.ini`, use a scratch git repo with fake files, never the real ones. The deny rules only apply when the session starts in this repo; an agent once overwrote the real index this way.
 - In a cloud session `gh pr view` fails (GitHub's GraphQL API is blocked). Use the REST API instead, for example `gh api repos/akholab/FileSorter/pulls/N`.
+- Before merging, read the PR's head SHA from `gh api repos/akholab/FileSorter/pulls/N` (`.head.sha`); never type one from memory. A guessed SHA made a merge fail.
+- Read a file's metadata (download mark, other NTFS streams) before moving it: a move to another drive is a copy, and copies drop it (see `research.md`).

@@ -145,7 +145,9 @@ class TrayFileIndexer:
                 display_text = f"Move to: {Path(option['destination']).parent}"
             else:
                 display_text = "Keep in current location"
-            if option.get("learned_count"):
+            if option.get("rule_domain"):
+                display_text += f"  (your rule: {option['rule_domain']})"
+            elif option.get("learned_count"):
                 display_text += f"  (your usual, {option['learned_count']} times)"
             options_listbox.insert(tk.END, display_text)
         

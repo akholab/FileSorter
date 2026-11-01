@@ -117,3 +117,27 @@ def test_describe_top_for_keep():
     assert describe_top([{"action": "keep"}], "misc") == (None, "no category matched")
     assert describe_top([{"action": "keep", "learned_count": 2}], "documents") == (None, "your usual: keep it here")
     assert describe_top([], "misc") == (None, "no category matched")
+
+
+def test_domain_rule_goes_first_and_replaces_the_same_folder():
+    from categorizer import apply_domain_rule
+    src = Path("C:/d/statement.pdf")
+    base = suggest_organization(src, CATS)
+    result = apply_domain_rule(src, base, {"domain": "mybank.com", "folder": "Documents"})
+    assert result[0]["rule_domain"] == "mybank.com"
+    assert Path(result[0]["destination"]) == Path("C:/d/Documents/statement.pdf")
+    assert len(result) == len(base)  # the plain Documents suggestion was folded in
+    assert describe_top(result, "documents") == (str(Path("C:/d/Documents")), "your rule: mybank.com")
+
+
+def test_domain_rule_with_a_full_path_and_a_file_already_there(tmp_path):
+    from categorizer import apply_domain_rule
+    bank = tmp_path / "Bank"
+    src = tmp_path / "Downloads" / "s.pdf"
+    rule = {"domain": "mybank.com", "folder": str(bank)}
+    assert Path(apply_domain_rule(src, [], rule)[0]["destination"]) == bank / "s.pdf"
+    already = bank / "s.pdf"
+    learned = {"action": "move", "destination": str(tmp_path / "Taxes" / "s.pdf"), "learned_count": 3}
+    result = apply_domain_rule(already, [learned, {"action": "keep"}], rule)
+    assert [s["action"] for s in result] == ["keep", "move"]
+    assert describe_top(result, "documents") == (None, "your rule: mybank.com")

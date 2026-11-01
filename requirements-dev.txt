@@ -1,3 +1,5 @@
 pyflakes>=3.0
 pytest>=8.0
+coverage>=7.0
+mutmut>=3.0; sys_platform != "win32"  # needs fork: on Windows use WSL
 watchdog>=3.0.0
