@@ -120,15 +120,20 @@ The system automatically creates configuration files:
 
 ### Adding New File Categories
 
-Edit the `DEFAULT_CATEGORIES` dictionary in `categorizer.py`:
+Categories live in `rules.toml`, next to the app's other data files. The app writes it with the built-in categories the first time it starts. Edit it and restart the app:
 
-```python
-"new_category": {
-    "extensions": [".ext1", ".ext2"],
-    "keywords": ["keyword1", "keyword2"],
-    "folders": ["Folder1", "Folder2"]
-}
+```toml
+[categories.taxes]
+extensions = [".pdf", ".xlsx"]   # checked first, top category wins
+keywords = ["invoice", "receipt"] # words in the file name
+folders = ["Taxes"]               # where to suggest moving the file
 ```
+
+If the file has a mistake, the app shows which line and uses the built-in categories until you fix it. Delete the file to get the defaults back.
+
+### Preview Sorting
+
+The **Preview Sorting** button lists every file in a folder with where it would go and why ("category: documents" or "your usual"). It never moves anything.
 
 ### Modifying Organization Rules
 

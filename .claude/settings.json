@@ -76,7 +76,9 @@
       "Read(/file_undo_log.json)",
       "Edit(/file_undo_log.json)",
       "Read(/file_learned_choices.json)",
-      "Edit(/file_learned_choices.json)"
+      "Edit(/file_learned_choices.json)",
+      "Read(/rules.toml)",
+      "Edit(/rules.toml)"
     ]
   }
 }

@@ -6,6 +6,7 @@ from categorizer import (
     DEFAULT_CATEGORIES,
     categorize_file,
     default_categories,
+    describe_top,
     suggest_organization,
 )
 
@@ -98,3 +99,21 @@ def test_every_category_has_the_required_keys():
     for name, rules in DEFAULT_CATEGORIES.items():
         assert set(rules) == {"extensions", "keywords", "folders"}, name
         assert rules["folders"], name
+
+
+def test_describe_top_names_the_category_for_a_category_move():
+    s = [{"action": "move", "source": "C:/d/a.pdf", "destination": "C:/d/Documents/a.pdf"}, {"action": "keep"}]
+    folder, reason = describe_top(s, "documents")
+    assert Path(folder) == Path("C:/d/Documents")
+    assert reason == "category: documents"
+
+
+def test_describe_top_says_your_usual_without_a_count():
+    s = [{"action": "move", "destination": "C:/Taxes/a.pdf", "learned_count": 4}, {"action": "keep"}]
+    assert describe_top(s, "documents")[1] == "your usual"
+
+
+def test_describe_top_for_keep():
+    assert describe_top([{"action": "keep"}], "misc") == (None, "no category matched")
+    assert describe_top([{"action": "keep", "learned_count": 2}], "documents") == (None, "your usual: keep it here")
+    assert describe_top([], "misc") == (None, "no category matched")
