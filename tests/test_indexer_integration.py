@@ -279,3 +279,10 @@ def test_moves_of_downloads_are_learned_per_website(ix, tmp_path, monkeypatch):
     assert Path(first_move(ix, ix.watched / "3.pdf")["destination"]).parent != bank
     ok, _ = ix.undo_last_action()  # undo takes the website vote back
     assert ok and sum(e["count"] for d in ix.learner.votes.values() for e in d.values()) == 1
+
+
+def test_keep_of_a_download_is_learned_for_its_website(ix, monkeypatch):
+    monkeypatch.setattr(file_indexer.download_source, "read_hosts", lambda p: ["www.mybank.com"])
+    f = make(ix.watched, "a.pdf")
+    assert ix.execute_suggestion({"action": "keep", "source": str(f)}, "keep")
+    assert [k.rsplit("|", 1)[1] for k in ix.learner.votes] == ["mybank.com"]
