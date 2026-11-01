@@ -101,3 +101,15 @@ def suggest_organization(file_path, categories):
             "source": str(file_path),
             "reason": "Keep file in current location (categorization failed)"
         }]
+
+
+def describe_top(suggestions, category):
+    """Return (destination folder or None, reason) for the first suggestion,
+    in words for the Preview list."""
+    top = suggestions[0] if suggestions else {"action": "keep"}
+    if top["action"] != "move":
+        return None, "your usual: keep it here" if top.get("learned_count") else "no category matched"
+    folder = str(Path(top["destination"]).parent)
+    if top.get("learned_count"):
+        return folder, "your usual"
+    return folder, f"category: {category}"

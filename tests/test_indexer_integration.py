@@ -168,3 +168,71 @@ def test_a_bulk_keep_counts_once_per_kind_of_file(ix):
     for n in "abc":
         ix.learn_from_move(make(ix.watched, f"{n}.zip"), None, seen)
     assert sum(e["count"] for d in ix.learner.votes.values() for e in d.values()) == 1
+
+
+def test_indexer_writes_and_uses_rules_toml(ix):
+    assert Path("rules.toml").exists()  # created in the temp work folder
+    assert ix.rules_error is None
+
+
+def test_indexer_uses_edited_rules(tmp_path, monkeypatch):
+    work = tmp_path / "w2"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    (work / "rules.toml").write_text('[categories.taxes]\nextensions = [".pdf"]\nfolders = ["Taxes"]\n', encoding="utf-8")
+    indexer = file_indexer.FileIndexer()
+    assert indexer.rules_error is None
+    assert indexer.categorize_file(str(tmp_path / "a.pdf")) == "taxes"
+
+
+def test_indexer_falls_back_on_broken_rules(tmp_path, monkeypatch):
+    work = tmp_path / "w3"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    (work / "rules.toml").write_text("[categories.taxes\n", encoding="utf-8")
+    indexer = file_indexer.FileIndexer()
+    assert "line" in indexer.rules_error
+    assert indexer.categorize_file(str(tmp_path / "a.pdf")) == "documents"
+
+
+def test_preview_lists_files_and_moves_nothing(ix):
+    pdf = make(ix.watched, "a.pdf")
+    odd = make(ix.watched, "notes.xyz")
+    make(ix.watched, "big.crdownload")  # unfinished downloads are left out
+    before = sorted(p.name for p in ix.watched.rglob("*"))
+    rows = {Path(f).name: (folder, reason) for f, folder, reason in ix.preview_folder(str(ix.watched))}
+    assert set(rows) == {"a.pdf", "notes.xyz"}
+    assert Path(rows["a.pdf"][0]) == ix.watched / "Documents"
+    assert rows["a.pdf"][1] == "category: documents"
+    assert rows["notes.xyz"] == (None, "no category matched")
+    assert sorted(p.name for p in ix.watched.rglob("*")) == before
+    assert pdf.exists() and odd.exists()
+    assert ix.suggestions_queue == []  # preview doesn't queue anything
+
+
+def test_preview_shows_learned_choice(ix, tmp_path):
+    taxes = tmp_path / "Taxes"
+    taxes.mkdir()
+    for name in ("1.pdf", "2.pdf"):
+        move_to(ix, make(ix.watched, name), taxes)
+    make(ix.watched, "3.pdf")
+    [(_, folder, reason)] = ix.preview_folder(str(ix.watched))
+    assert (Path(folder), reason) == (taxes, "your usual")
+
+
+def test_preview_leaves_out_files_already_sorted(ix):
+    f = make(ix.watched, "a.pdf")
+    move_to(ix, f, ix.watched / "Documents")  # now indexed, inside the watched folder
+    make(ix.watched, "b.pdf")
+    names = [Path(p).name for p, _, _ in ix.preview_folder(str(ix.watched))]
+    assert names == ["b.pdf"]
+
+
+def test_rules_warning_reads_as_a_sentence(tmp_path, monkeypatch):
+    work = tmp_path / "w4"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    (work / "rules.toml").write_text("[categories.taxes\n", encoding="utf-8")
+    msg = file_indexer.FileIndexer().rules_warning()
+    assert msg.startswith("Rules not loaded, so the built-in categories are used.")
+    assert "rules.toml" in msg

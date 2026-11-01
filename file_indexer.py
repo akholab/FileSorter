@@ -15,10 +15,11 @@ from tkinter import ttk, messagebox, filedialog
 import configparser
 import psutil
 from file_monitor import FileMonitor
-from categorizer import default_categories, categorize_file, suggest_organization
+from categorizer import categorize_file, describe_top, suggest_organization
 from safemove import UndoLog, safe_move, trash_file, undo_move
 from filewatch import get_settle_seconds, is_partial_name, is_still_changing
 from learning import KEEP, Learner, get_threshold
+import rules
 import win32api
 import win32gui
 import subprocess
@@ -33,7 +34,11 @@ class FileIndexer:
         self.index_file = "file_index.json"
         self.load_index()
         
-        self.categories = default_categories()
+        # Categories come from rules.toml; on a mistake, the built-in ones are used
+        # and rules_error says why (the GUI shows it at startup).
+        self.categories, self.rules_error = rules.load()
+        if self.rules_error:
+            print(self.rules_warning())
         
         self.suggestions_queue = []
         self.is_running = False
@@ -45,6 +50,10 @@ class FileIndexer:
         # Where you usually put each kind of file (extension + watched folder)
         self.learner = Learner("file_learned_choices.json", get_threshold(self.config))
         
+    def rules_warning(self):
+        """The message shown when rules.toml couldn't be used."""
+        return f"Rules not loaded, so the built-in categories are used.\n\n{self.rules_error}"
+
     def load_config(self):
         """Load configuration from file"""
         if os.path.exists(self.config_file):
@@ -302,6 +311,32 @@ class FileIndexer:
             print(f"Error checking file processing rules for {file_path}: {e}")
             return True  # Default to processing if there's an error
     
+    def candidate_files(self, directory):
+        """Yield the files under `directory` that the app would make suggestions
+        for: processable by the include/exclude rules and not indexed yet."""
+        for root, dirs, files in os.walk(directory):
+            # Skip problematic directories
+            dirs[:] = [d for d in dirs if d not in {'$RECYCLE.BIN', 'System Volume Information', '.git', '__pycache__'}]
+            for file in files:
+                try:
+                    # Same form as the index keys (str(Path(...))), so already
+                    # sorted files match on Windows too.
+                    file_path = str(Path(root) / file)
+                    if os.path.isfile(file_path) and self.should_process_file(file_path) \
+                            and file_path not in self.index_data:
+                        yield file_path
+                except (OSError, PermissionError) as e:
+                    print(f"Error processing file {file}: {e}")
+
+    def preview_folder(self, directory):
+        """List what sorting would do in `directory` without moving anything:
+        one (file, destination folder or None, reason) per candidate file."""
+        rows = []
+        for file_path in self.candidate_files(directory):
+            folder, reason = describe_top(self.suggest_organization(file_path), self.categorize_file(file_path))
+            rows.append((file_path, folder, reason))
+        return rows
+
     def scan_directory(self, directory):
         """Scan a directory for files and add them to the suggestions queue"""
         try:
@@ -319,22 +354,8 @@ class FileIndexer:
                 print(f"No read permission for directory: {directory}")
                 return
             
-            for root, dirs, files in os.walk(directory):
-                # Skip problematic directories
-                dirs[:] = [d for d in dirs if d not in {'$RECYCLE.BIN', 'System Volume Information', '.git', '__pycache__'}]
-                
-                for file in files:
-                    try:
-                        file_path = os.path.join(root, file)
-                        if os.path.isfile(file_path):
-                            # Check if file should be processed based on rules
-                            if self.should_process_file(file_path):
-                                # Check if file is already indexed
-                                if file_path not in self.index_data:
-                                    self.add_to_suggestions_queue(file_path)
-                    except (OSError, PermissionError) as e:
-                        print(f"Error processing file {file}: {e}")
-                        continue
+            for file_path in self.candidate_files(directory):
+                self.add_to_suggestions_queue(file_path)
                         
         except PermissionError as e:
             print(f"Permission denied scanning directory {directory}: {e}")
@@ -398,6 +419,8 @@ class FileIndexerGUI:
         self.root.geometry("800x600")
         
         self.setup_ui()
+        if self.indexer.rules_error:
+            messagebox.showwarning("Rules not loaded", self.indexer.rules_warning())
         self.check_suggestions()
     
     def setup_ui(self):
@@ -424,7 +447,8 @@ class FileIndexerGUI:
         ttk.Button(button_frame, text="Scan Directory", command=self.scan_directory).grid(row=0, column=0, padx=(0, 10))
         ttk.Button(button_frame, text="Add Monitor", command=self.add_monitor).grid(row=0, column=1, padx=(0, 10))
         ttk.Button(button_frame, text="Get Suggestions", command=self.get_suggestions).grid(row=0, column=2, padx=(0, 10))
-        ttk.Button(button_frame, text="Settings", command=self.show_settings).grid(row=0, column=3)
+        ttk.Button(button_frame, text="Preview Sorting", command=self.preview_sorting).grid(row=0, column=3, padx=(0, 10))
+        ttk.Button(button_frame, text="Settings", command=self.show_settings).grid(row=0, column=4)
         
         # Suggestions frame
         suggestions_frame = ttk.LabelFrame(main_frame, text="File Suggestions", padding="10")
@@ -511,6 +535,45 @@ class FileIndexerGUI:
             
             threading.Thread(target=scan_thread, daemon=True).start()
     
+    def preview_sorting(self):
+        """Show where each file in a folder would go and why. Moves nothing."""
+        watched = self.indexer.file_monitor.get_monitored_directories()
+        directory = filedialog.askdirectory(title="Select folder to preview",
+                                            initialdir=watched[0] if watched else None)
+        if not directory:
+            return
+        self.status_label.config(text=f"Preparing preview of {directory}...")
+
+        # Walk the folder in a thread, like Scan Directory, so the window doesn't freeze.
+        def preview_thread():
+            rows = self.indexer.preview_folder(directory)
+            self.root.after(0, lambda: self.show_preview(directory, rows))
+
+        threading.Thread(target=preview_thread, daemon=True).start()
+
+    def show_preview(self, directory, rows):
+        """The read-only Preview window: file, destination, reason."""
+        self.status_label.config(text="Preview ready")
+        window = tk.Toplevel(self.root)
+        window.title(f"Preview: {directory}")
+        window.geometry("800x400")
+        ttk.Label(window, text="Nothing is moved here. This shows what sorting would suggest first.").pack(pady=5)
+        frame = ttk.Frame(window)
+        frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        tree = ttk.Treeview(frame, columns=("File", "Destination", "Why"), show="headings")
+        for column, width in (("File", 300), ("Destination", 300), ("Why", 150)):
+            tree.heading(column, text=column)
+            tree.column(column, width=width)
+        scrollbar = ttk.Scrollbar(frame, orient=tk.VERTICAL, command=tree.yview)
+        tree.configure(yscrollcommand=scrollbar.set)
+        tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        for file_path, folder, reason in rows:
+            tree.insert("", tk.END, values=(os.path.relpath(file_path, directory), folder or "(stays here)", reason))
+        if not rows:
+            tree.insert("", tk.END, values=("No files to sort here", "", ""))
+        ttk.Button(window, text="Close", command=window.destroy).pack(pady=5)
+
     def add_monitor(self):
         """Add a directory to monitoring"""
         directory = filedialog.askdirectory(title="Select directory to monitor")

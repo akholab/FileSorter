@@ -57,9 +57,9 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 
 ## Where to look
 
-- All Python modules are at the repo root (no package folder): `launcher.py` (entry point), `categorizer.py` (pure sorting logic and the default categories) `safemove.py` (no-overwrite moves, the on-disk undo log, Trash) `filewatch.py` (is a file still being written?) and `learning.py` (remembers where you usually put each kind of file); none has Windows imports and all are tested in `tests/`, `file_indexer.py` (indexer and GUI), `tray_indexer.py`, `file_monitor.py` (watchdog wrapper).
+- All Python modules are at the repo root (no package folder): `launcher.py` (entry point), `categorizer.py` (pure sorting logic and the default categories) `safemove.py` (no-overwrite moves, the on-disk undo log, Trash) `filewatch.py` (is a file still being written?) `learning.py` (remembers where you usually put each kind of file) and `rules.py` (reads and writes `rules.toml`); none has Windows imports and all are tested in `tests/`, `file_indexer.py` (indexer and GUI), `tray_indexer.py`, `file_monitor.py` (watchdog wrapper).
 - `*.bat`, `FileManager.vbs`: Windows-only launchers and installers.
-- `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json`: created at runtime in the working directory. Git-ignored.
+- `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json`, `rules.toml`: created at runtime in the working directory. Git-ignored. `rules.py` reads and writes `rules.toml` (the owner's categories; the built-in `DEFAULT_CATEGORIES` are only the starting point and the fallback).
 - `README.md`: features, launch options, how to add categories.
 - `.claude/harness/`: check, progress file and hooks (see its `README.md`). `.claude/agents/reviewer.md`: the read-only reviewer for step 5. `.claude/skills/`: `/retro`, `/cleanup`, `/harness-update`. `.claude/harness/kit-version`: the kit commit this harness was last updated from.
 - `research.md`: outside facts worth keeping, with sources; longer research lives in `docs/research/`.
@@ -67,7 +67,7 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 
 ## Boundaries
 
-- **Never read or edit:** `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json` (the owner's real data with personal file paths; never put their contents in commits, docs or tests). Enforced by deny rules in `.claude/settings.json`.
+- **Never read or edit:** `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json`, `rules.toml` (the owner's real data with personal file paths; never put their contents in commits, docs or tests). Enforced by deny rules in `.claude/settings.json`.
 - **Ask the user first:** running the app (it moves real files), publishing the package, editing the `.bat` / `.vbs` launchers. Enforced by ask rules in `.claude/settings.json`. Also ask before changing the category rules in `DEFAULT_CATEGORIES` in `categorizer.py`; `tests/test_categories_pinned.py` fails until you update it, so the change can't slip through.
 - **Always blocked** by `.claude/harness/hooks/guard.sh`: recursive deletes outside build and cache folders, force-push, `git reset --hard`, `git clean -f`, deleting branches. If one is truly needed, explain why and ask the user to run it.
 

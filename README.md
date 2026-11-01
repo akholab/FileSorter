@@ -93,6 +93,7 @@ FileManager/
 ├── file_indexer.py          # Main GUI application
 ├── tray_indexer.py          # System tray application
 ├── file_monitor.py          # File monitoring module
+├── rules.py                 # Reads and writes rules.toml
 ├── requirements.txt         # Python dependencies
 ├── setup.py                 # Package setup script
 ├── LICENSE                  # MIT License
@@ -107,6 +108,7 @@ FileManager/
 ├── install.bat              # Windows dependency installer
 ├── README.md                # This file
 ├── file_indexer_config.ini  # Configuration file (auto-generated)
+├── rules.toml               # Your categories (auto-generated, editable)
 └── file_index.json          # File index database (auto-generated)
 ```
 
@@ -115,20 +117,26 @@ FileManager/
 The system automatically creates configuration files:
 - `file_indexer_config.ini`: Application settings
 - `file_index.json`: Database of indexed files and decisions
+- `rules.toml`: Your categories (see Customization)
 
 ## Customization
 
 ### Adding New File Categories
 
-Edit the `DEFAULT_CATEGORIES` dictionary in `categorizer.py`:
+Categories live in `rules.toml`, next to the app's other data files. The app writes it with the built-in categories the first time it starts. Edit it and restart the app:
 
-```python
-"new_category": {
-    "extensions": [".ext1", ".ext2"],
-    "keywords": ["keyword1", "keyword2"],
-    "folders": ["Folder1", "Folder2"]
-}
+```toml
+[categories.taxes]
+extensions = [".pdf", ".xlsx"]   # checked first, top category wins
+keywords = ["invoice", "receipt"] # words in the file name
+folders = ["Taxes"]               # where to suggest moving the file
 ```
+
+If the file has a mistake, the app shows which line and uses the built-in categories until you fix it. Delete the file to get the defaults back.
+
+### Preview Sorting
+
+The **Preview Sorting** button lists every file in a folder with where it would go and why ("category: documents" or "your usual"). It never moves anything.
 
 ### Modifying Organization Rules
 

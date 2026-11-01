@@ -258,6 +258,12 @@ class TrayFileIndexer:
     
     def run(self):
         """Start the system tray application"""
+        if self.indexer.rules_error:  # pythonw has no console, so say it in a window
+            root = tk.Tk()
+            root.withdraw()
+            messagebox.showwarning("Rules not loaded", self.indexer.rules_warning())
+            root.destroy()
+
         # Start monitoring
         self.indexer.start_monitoring()
         
