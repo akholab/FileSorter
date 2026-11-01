@@ -107,3 +107,11 @@ def test_written_text_is_valid_toml_for_any_text(monkeypatch):
     assert rules.parse(rules.default_text()) == {
         "fotos 📷": {"extensions": [".heic"], "keywords": ['quote " back\\slash', "del\x7fchar", "tab\tnew\nline"],
                     "folders": ["Ünïcode 😀"]}}
+
+
+def test_file_that_cannot_be_created_falls_back_with_a_reason(tmp_path):
+    path = tmp_path / "missing-folder" / "rules.toml"  # parent doesn't exist, so open() fails
+    categories, error = rules.load(str(path))
+    assert categories == DEFAULT_CATEGORIES
+    assert error.startswith("could not create")
+    assert not path.exists()
