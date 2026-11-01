@@ -111,8 +111,15 @@ class FileIndexer:
         rule = download_source.matching_rule(hosts, self.domain_rules)
         return apply_domain_rule(file_path, suggestions, rule) if rule else suggestions
     
-    def learn_from_move(self, source, destination, seen=None):
+    def download_domain(self, file_path):
+        """The website `file_path` was downloaded from, for learning, or None.
+        Read it before a move: the mark is lost on FAT32/exFAT drives, and
+        Python before 3.12 drops it when moving to another drive."""
+        return download_source.learn_domain(download_source.read_hosts(file_path))
+
+    def learn_from_move(self, source, destination, seen=None, domain=None):
         """Count a move (or, with destination=None, a Keep) as a vote.
+        For a move, pass the `domain` read from the source before moving.
 
         Returns the details to store with the undo entry so Undo can take the
         vote back. Pass a set as `seen` so a bulk move counts once per group.
@@ -121,8 +128,8 @@ class FileIndexer:
             if destination is not None and os.path.normcase(str(Path(destination).parent)) == os.path.normcase(str(Path(source).parent)):
                 return {}  # the file did not go anywhere: nothing to learn
             roots = self.file_monitor.get_monitored_directories()
-            # The download mark moves with the file, so read it where the file is now
-            domain = download_source.learn_domain(download_source.read_hosts(destination or source))
+            if destination is None:
+                domain = self.download_domain(source)  # a Keep: the file is still there
             key = Learner.key_for(source, roots, domain)
             if seen is not None:
                 if key in seen:
@@ -236,11 +243,12 @@ class FileIndexer:
                     return False
                 
                 # Move the file (never overwrites; renames on a name clash)
+                domain = self.download_domain(source)
                 destination = safe_move(source, destination)
                 
                 # Record action for undo (and count it as a vote)
                 details = {"original_path": str(source)}
-                details.update(self.learn_from_move(source, destination))
+                details.update(self.learn_from_move(source, destination, domain=domain))
                 self.record_action("moved", destination, details)
                 
                 # Update index
@@ -838,11 +846,12 @@ class FileIndexerGUI:
                     return
                 
                 # Move the file (never overwrites; renames on a name clash)
+                domain = self.indexer.download_domain(source_path)
                 dest_path = safe_move(source_path, dest_path)
                 
                 # Record action for undo (and count it as a vote)
                 details = {"original_path": str(source_path)}
-                details.update(self.indexer.learn_from_move(source_path, dest_path))
+                details.update(self.indexer.learn_from_move(source_path, dest_path, domain=domain))
                 self.indexer.record_action("moved", dest_path, details)
                 
                 # Update index
@@ -1012,11 +1021,12 @@ class FileIndexerGUI:
                             continue
                         
                         # Move the file (never overwrites; renames on a name clash)
+                        domain = self.indexer.download_domain(file_path)
                         dest_path = safe_move(file_path, dest_path)
                         
                         # Record action for undo (a bulk move is one vote per kind of file)
                         details = {"original_path": str(file_path)}
-                        details.update(self.indexer.learn_from_move(file_path, dest_path, learned_groups))
+                        details.update(self.indexer.learn_from_move(file_path, dest_path, learned_groups, domain))
                         self.indexer.record_action("moved", dest_path, details)
                         
                         # Update index

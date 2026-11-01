@@ -140,6 +140,9 @@ def test_default_file_has_no_domain_rules_but_shows_an_example():
 @pytest.mark.parametrize("rule, words", [
     ('domain = "https://mybank.com/x"\nfolder = "Bank"\n', "write just the site"),
     ('domain = ""\nfolder = "Bank"\n', "write just the site"),
+    ('domain = "com"\nfolder = "Bank"\n', "write just the site"),
+    ('domain = "mybank.com?x"\nfolder = "Bank"\n', "write just the site"),
+    ('domain = "my..bank.com"\nfolder = "Bank"\n', "write just the site"),
     ('domain = "mybank.com"\n', "needs a domain and a folder"),
     ('domain = "mybank.com"\nfolder = "  "\n', "needs a domain and a folder"),
     ('domain = 5\nfolder = "Bank"\n', "needs a domain and a folder"),

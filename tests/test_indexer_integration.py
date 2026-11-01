@@ -268,7 +268,9 @@ def test_domain_rule_wins_over_learned_and_category(tmp_path, monkeypatch):
 def test_moves_of_downloads_are_learned_per_website(ix, tmp_path, monkeypatch):
     bank = tmp_path / "Bank"
     bank.mkdir()
-    monkeypatch.setattr(file_indexer.download_source, "read_hosts", lambda p: ["www.mybank.com"])
+    # Only files still in Downloads carry the mark, like a move that loses it
+    monkeypatch.setattr(file_indexer.download_source, "read_hosts",
+                        lambda p: ["www.mybank.com"] if Path(p).parent == ix.watched else [])
     for name in ("1.pdf", "2.pdf"):
         move_to(ix, make(ix.watched, name), bank)
     assert all(k.endswith("|mybank.com") for k in ix.learner.votes)

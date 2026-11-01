@@ -127,8 +127,10 @@ def _parse_domain_rules(raw):
             domain = domain[2:]
         if domain.startswith("www."):
             domain = domain[4:]
-        if not domain or any(c in domain for c in "/: \t"):
-            raise ValueError(f"{where}: write just the site, like \"mybank.com\" (got {rule['domain']!r})")
+        labels = domain.split(".")
+        if len(labels) < 2 or not all(l and all(c.isalnum() or c == "-" for c in l) for l in labels):
+            raise ValueError(f"{where}: write just the site with its ending, like \"mybank.com\" "
+                             f"(got {rule['domain']!r})")
         result.append({"domain": domain, "folder": folder.strip()})
     return result
 

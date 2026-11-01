@@ -137,4 +137,7 @@ def test_domain_rule_with_a_full_path_and_a_file_already_there(tmp_path):
     rule = {"domain": "mybank.com", "folder": str(bank)}
     assert Path(apply_domain_rule(src, [], rule)[0]["destination"]) == bank / "s.pdf"
     already = bank / "s.pdf"
-    assert apply_domain_rule(already, [{"action": "keep"}], rule) == [{"action": "keep"}]
+    learned = {"action": "move", "destination": str(tmp_path / "Taxes" / "s.pdf"), "learned_count": 3}
+    result = apply_domain_rule(already, [learned, {"action": "keep"}], rule)
+    assert [s["action"] for s in result] == ["keep", "move"]
+    assert describe_top(result, "documents") == (None, "your rule: mybank.com")
