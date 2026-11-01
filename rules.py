@@ -35,16 +35,21 @@ HEADER = """\
 """
 
 
+def _toml_string(value):
+    # A JSON string is a TOML basic string, except that TOML forbids a raw DEL
+    # and \u escapes of surrogate halves; ensure_ascii=False avoids the latter.
+    return json.dumps(value, ensure_ascii=False).replace("\x7f", "\\u007f")
+
+
 def _toml_list(values):
-    # json.dumps gives a valid TOML basic string for every value.
-    return "[" + ", ".join(json.dumps(v) for v in values) + "]"
+    return "[" + ", ".join(_toml_string(v) for v in values) + "]"
 
 
 def default_text():
     """The rules.toml text for the built-in categories."""
     lines = [HEADER]
     for name, rules in default_categories().items():
-        lines.append(f"[categories.{json.dumps(name)}]")
+        lines.append(f"[categories.{_toml_string(name)}]")
         for field in FIELDS:
             lines.append(f"{field} = {_toml_list(rules[field])}")
         lines.append("")
@@ -59,6 +64,9 @@ def parse(text):
     except tomllib.TOMLDecodeError as e:
         raise ValueError(f"not valid TOML: {e}") from e
 
+    unknown = sorted(set(data) - {"categories"})
+    if unknown:
+        raise ValueError(f"unknown setting '{unknown[0]}' (only [categories.<name>] blocks are allowed)")
     raw = data.get("categories")
     if not isinstance(raw, dict) or not raw:
         raise ValueError("no [categories.<name>] blocks found")
@@ -67,6 +75,12 @@ def parse(text):
     for name, rules in raw.items():
         if not isinstance(rules, dict):
             raise ValueError(f"category '{name}' must be a [categories.{name}] block")
+        if name == "misc":
+            raise ValueError("'misc' is reserved for files no category matches; pick another name")
+        unknown = sorted(set(rules) - set(FIELDS))
+        if unknown:
+            raise ValueError(f"category '{name}': unknown setting '{unknown[0]}' "
+                             f"(allowed: {', '.join(FIELDS)})")
         clean = {}
         for field in FIELDS:
             values = rules.get(field, [])

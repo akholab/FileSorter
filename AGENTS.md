@@ -57,7 +57,7 @@ The app itself only runs on Windows today: `file_indexer.py` imports `win32api`/
 
 ## Where to look
 
-- All Python modules are at the repo root (no package folder): `launcher.py` (entry point), `categorizer.py` (pure sorting logic and the default categories) `safemove.py` (no-overwrite moves, the on-disk undo log, Trash) `filewatch.py` (is a file still being written?) and `learning.py` (remembers where you usually put each kind of file); none has Windows imports and all are tested in `tests/`, `file_indexer.py` (indexer and GUI), `tray_indexer.py`, `file_monitor.py` (watchdog wrapper).
+- All Python modules are at the repo root (no package folder): `launcher.py` (entry point), `categorizer.py` (pure sorting logic and the default categories) `safemove.py` (no-overwrite moves, the on-disk undo log, Trash) `filewatch.py` (is a file still being written?) `learning.py` (remembers where you usually put each kind of file) and `rules.py` (reads and writes `rules.toml`); none has Windows imports and all are tested in `tests/`, `file_indexer.py` (indexer and GUI), `tray_indexer.py`, `file_monitor.py` (watchdog wrapper).
 - `*.bat`, `FileManager.vbs`: Windows-only launchers and installers.
 - `file_index.json`, `file_indexer_config.ini`, `file_undo_log.json`, `file_learned_choices.json`, `rules.toml`: created at runtime in the working directory. Git-ignored. `rules.py` reads and writes `rules.toml` (the owner's categories; the built-in `DEFAULT_CATEGORIES` are only the starting point and the fallback).
 - `README.md`: features, launch options, how to add categories.

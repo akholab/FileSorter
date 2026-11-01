@@ -60,7 +60,11 @@ def test_syntax_error_falls_back_to_defaults_and_names_the_line(tmp_path):
 
 
 @pytest.mark.parametrize("text, words", [
-    ('title = "no categories"\n', "no [categories"),
+    ('title = "no categories"\n', "unknown setting 'title'"),
+    ('# empty\n', "no [categories"),
+    ('[other]\nx = 1\n', "unknown setting 'other'"),
+    ('[categories.docs]\nextention = [".pdf"]\nfolders = ["Docs"]\n', "unknown setting 'extention'"),
+    ('[categories.misc]\nextensions = [".exe"]\nfolders = ["Misc"]\n', "'misc' is reserved"),
     ('[categories.docs]\nextensions = ".pdf"\nfolders = ["Docs"]\n', "extensions must be a list"),
     ('[categories.docs]\nextensions = [1]\nfolders = ["Docs"]\n', "extensions must be a list"),
     ('[categories.docs]\nextensions = [".pdf"]\nfolders = []\n', "needs at least one folder"),
@@ -94,3 +98,12 @@ def test_returned_defaults_are_a_copy(tmp_path):
     categories, _ = rules.load(str(tmp_path / "rules.toml"))
     categories["documents"]["folders"].append("X")
     assert "X" not in DEFAULT_CATEGORIES["documents"]["folders"]
+
+
+def test_written_text_is_valid_toml_for_any_text(monkeypatch):
+    odd = {"fotos 📷": {"extensions": [".heic"], "keywords": ['quote " back\\slash', "del\x7fchar", "tab\tnew\nline"],
+                       "folders": ["Ünïcode 😀"]}}
+    monkeypatch.setattr(rules, "default_categories", lambda: odd)
+    assert rules.parse(rules.default_text()) == {
+        "fotos 📷": {"extensions": [".heic"], "keywords": ['quote " back\\slash', "del\x7fchar", "tab\tnew\nline"],
+                    "folders": ["Ünïcode 😀"]}}

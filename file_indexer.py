@@ -38,7 +38,7 @@ class FileIndexer:
         # and rules_error says why (the GUI shows it at startup).
         self.categories, self.rules_error = rules.load()
         if self.rules_error:
-            print(f"Rules not loaded, using built-in categories: {self.rules_error}")
+            print(self.rules_warning())
         
         self.suggestions_queue = []
         self.is_running = False
@@ -50,6 +50,10 @@ class FileIndexer:
         # Where you usually put each kind of file (extension + watched folder)
         self.learner = Learner("file_learned_choices.json", get_threshold(self.config))
         
+    def rules_warning(self):
+        """The message shown when rules.toml couldn't be used."""
+        return f"Rules not loaded, so the built-in categories are used.\n\n{self.rules_error}"
+
     def load_config(self):
         """Load configuration from file"""
         if os.path.exists(self.config_file):
@@ -315,7 +319,9 @@ class FileIndexer:
             dirs[:] = [d for d in dirs if d not in {'$RECYCLE.BIN', 'System Volume Information', '.git', '__pycache__'}]
             for file in files:
                 try:
-                    file_path = os.path.join(root, file)
+                    # Same form as the index keys (str(Path(...))), so already
+                    # sorted files match on Windows too.
+                    file_path = str(Path(root) / file)
                     if os.path.isfile(file_path) and self.should_process_file(file_path) \
                             and file_path not in self.index_data:
                         yield file_path
@@ -414,9 +420,7 @@ class FileIndexerGUI:
         
         self.setup_ui()
         if self.indexer.rules_error:
-            messagebox.showwarning("Rules not loaded",
-                                   f"Using the built-in categories because of a problem in "
-                                   f"{self.indexer.rules_error}")
+            messagebox.showwarning("Rules not loaded", self.indexer.rules_warning())
         self.check_suggestions()
     
     def setup_ui(self):
@@ -538,8 +542,18 @@ class FileIndexerGUI:
                                             initialdir=watched[0] if watched else None)
         if not directory:
             return
-        rows = self.indexer.preview_folder(directory)
+        self.status_label.config(text=f"Preparing preview of {directory}...")
 
+        # Walk the folder in a thread, like Scan Directory, so the window doesn't freeze.
+        def preview_thread():
+            rows = self.indexer.preview_folder(directory)
+            self.root.after(0, lambda: self.show_preview(directory, rows))
+
+        threading.Thread(target=preview_thread, daemon=True).start()
+
+    def show_preview(self, directory, rows):
+        """The read-only Preview window: file, destination, reason."""
+        self.status_label.config(text="Preview ready")
         window = tk.Toplevel(self.root)
         window.title(f"Preview: {directory}")
         window.geometry("800x400")

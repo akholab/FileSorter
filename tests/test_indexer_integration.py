@@ -218,3 +218,21 @@ def test_preview_shows_learned_choice(ix, tmp_path):
     make(ix.watched, "3.pdf")
     [(_, folder, reason)] = ix.preview_folder(str(ix.watched))
     assert (Path(folder), reason) == (taxes, "your usual")
+
+
+def test_preview_leaves_out_files_already_sorted(ix):
+    f = make(ix.watched, "a.pdf")
+    move_to(ix, f, ix.watched / "Documents")  # now indexed, inside the watched folder
+    make(ix.watched, "b.pdf")
+    names = [Path(p).name for p, _, _ in ix.preview_folder(str(ix.watched))]
+    assert names == ["b.pdf"]
+
+
+def test_rules_warning_reads_as_a_sentence(tmp_path, monkeypatch):
+    work = tmp_path / "w4"
+    work.mkdir()
+    monkeypatch.chdir(work)
+    (work / "rules.toml").write_text("[categories.taxes\n", encoding="utf-8")
+    msg = file_indexer.FileIndexer().rules_warning()
+    assert msg.startswith("Rules not loaded, so the built-in categories are used.")
+    assert "rules.toml" in msg

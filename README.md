@@ -93,6 +93,7 @@ FileManager/
 ├── file_indexer.py          # Main GUI application
 ├── tray_indexer.py          # System tray application
 ├── file_monitor.py          # File monitoring module
+├── rules.py                 # Reads and writes rules.toml
 ├── requirements.txt         # Python dependencies
 ├── setup.py                 # Package setup script
 ├── LICENSE                  # MIT License
@@ -107,6 +108,7 @@ FileManager/
 ├── install.bat              # Windows dependency installer
 ├── README.md                # This file
 ├── file_indexer_config.ini  # Configuration file (auto-generated)
+├── rules.toml               # Your categories (auto-generated, editable)
 └── file_index.json          # File index database (auto-generated)
 ```
 
@@ -115,6 +117,7 @@ FileManager/
 The system automatically creates configuration files:
 - `file_indexer_config.ini`: Application settings
 - `file_index.json`: Database of indexed files and decisions
+- `rules.toml`: Your categories (see Customization)
 
 ## Customization
 
